@@ -54,6 +54,12 @@ var (
 	errInvalidPath   = errors.New("invalid header Path")
 )
 
+var (
+	errSeveralNodes       = errors.New("several nodes with the same path")
+	errParentDirNotFound  = errors.New("parent dir not found")
+	errParentDirIsDeleted = errors.New("parent dir is deleted")
+)
+
 // IsValidPath says the path is valid
 func IsValidPath(path string) bool {
 	if path == "/" {
