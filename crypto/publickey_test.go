@@ -17,7 +17,6 @@ func TestDecodePublicKey(t *testing.T) {
 
 	pub := DecodePublicKey("Ed25519,8WXh5ffCkOUvLt7z+6tgy650v9MnT45e4d4zRclUoWY=")
 
-	assert(t, pub != nil)
 	assert(t, len(pub) == 32)
 	assert(t, prv.PublicKey().Equal(pub))
 }
@@ -35,7 +34,6 @@ func TestPrivateKey_Sign(t *testing.T) {
 	sig1 := prv.Sign([]byte("test-message"))
 	sig2 := prv.Sign([]byte("test-message"))
 
-	assert(t, sig1 != nil)
 	assert(t, len(sig1) == 64)
 	assert(t, bytes.Equal(sig1, sig2))
 }
