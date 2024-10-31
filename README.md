@@ -1,2 +1,2 @@
 # indifs
-Individual Distributed Versioned Filesystem
+Individual Distributed Peer-to-Peer Filesystem for the Decentralized Web
