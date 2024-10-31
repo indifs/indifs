@@ -1,2 +1,2 @@
 # indifs
-Individual Filesystem
+Individual Distributed Versioned Filesystem
