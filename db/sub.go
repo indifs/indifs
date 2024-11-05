@@ -17,7 +17,7 @@ type subTransaction struct {
 }
 
 func (d *subStorage) Open(key string) (io.ReadSeekCloser, error) {
-	return d.Open(d.prefix + key)
+	return d.db.Open(d.prefix + key)
 }
 
 func (d *subStorage) Execute(fn func(tx Transaction) error) error {
