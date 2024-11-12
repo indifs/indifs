@@ -1,4 +1,4 @@
-package ifs
+package indifs
 
 import (
 	"bytes"
@@ -42,10 +42,10 @@ func (c *Commit) Trace() {
 	traceHeaders(c.Headers)
 }
 
-func MakeCommit(vfs IFS, prv crypto.PrivateKey, src fs.FS, ts time.Time) (commit *Commit, err error) {
+func MakeCommit(ifs IFS, prv crypto.PrivateKey, src fs.FS, ts time.Time) (commit *Commit, err error) {
 	defer catch(&err)
 
-	root := tryVal(vfs.FileHeader("/"))
+	root := tryVal(ifs.FileHeader("/"))
 	ver := root.Ver() + 1       // new ver
 	partSize := root.PartSize() //
 
@@ -63,13 +63,9 @@ func MakeCommit(vfs IFS, prv crypto.PrivateKey, src fs.FS, ts time.Time) (commit
 		}
 		var dfsPath = path[1:] // trim prefix '/'
 		var isDir = strings.HasSuffix(path, "/")
-		h, err := vfs.FileHeader(path)
-		if err == ErrNotFound {
-			err = nil
-		}
-		try(err)
+		h := valExcludedNotFound(ifs.FileHeader(path))
 		exists := h != nil
-		if h == nil {
+		if !exists {
 			h = Header{{headerPath, []byte(path)}}
 		}
 		onDisk[path] = true
@@ -96,16 +92,14 @@ func MakeCommit(vfs IFS, prv crypto.PrivateKey, src fs.FS, ts time.Time) (commit
 			}
 			dfsPath = strings.TrimSuffix(dfsPath, "/")
 			dd := tryVal(fs.ReadDir(src, dfsPath))
-			if len(dd) > MaxPathDirFilesCount {
-				try(ErrTooManyFiles)
-			}
+			dd = sliceFilter(dd, func(f fs.DirEntry) bool { // exclude invalid names
+				return isValidPathName(f.Name())
+			})
+			require(len(dd) <= MaxPathDirFilesCount, ErrTooManyFiles)
 			sort.Slice(dd, func(i, j int) bool { // sort
 				return pathLess(dd[i].Name(), dd[j].Name())
 			})
 			for _, f := range dd {
-				if !isValidPathName(f.Name()) {
-					continue
-				}
 				if f.IsDir() {
 					diskWalk(path + f.Name() + "/")
 				} else {
@@ -131,11 +125,7 @@ func MakeCommit(vfs IFS, prv crypto.PrivateKey, src fs.FS, ts time.Time) (commit
 		if !inBatch[path] {
 			hh = append(hh, h)
 		}
-		ff, err := vfs.ReadDir(path)
-		if err == ErrNotFound {
-			err = nil
-		}
-		try(err)
+		ff := valExcludedNotFound(ifs.ReadDir(path))
 		for _, h := range ff {
 			vfsWalk(h)
 		}

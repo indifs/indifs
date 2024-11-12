@@ -1,4 +1,4 @@
-package ifs
+package indifs
 
 import (
 	"bytes"
@@ -27,6 +27,13 @@ func tryVal3[T1, T2, T3 any](v1 T1, v2 T2, v3 T3, err error) (T1, T2, T3) {
 	return v1, v2, v3
 }
 
+func valExcludedNotFound[T any](v T, err error) T {
+	if err != ErrNotFound {
+		try(err)
+	}
+	return v
+}
+
 func excludeErr(err, errConst error) error {
 	if err == errConst {
 		return nil
@@ -42,9 +49,9 @@ func try(err error) {
 	}
 }
 
-func require(f bool, err string) {
+func require(f bool, err any) {
 	if !f {
-		try(errors.New(err))
+		try(toError(err))
 	}
 }
 
@@ -79,6 +86,15 @@ func containsOnly(s, chars string) bool {
 		}
 	}
 	return true
+}
+
+func sliceFilter[S ~[]E, E any](vv S, fn func(E) bool) (res S) {
+	for _, v := range vv {
+		if fn(v) {
+			res = append(res, v)
+		}
+	}
+	return
 }
 
 func bContainOnly(s, chars []byte) bool {

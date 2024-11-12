@@ -1,4 +1,4 @@
-package ifs
+package indifs
 
 import (
 	"github.com/indifs/indifs/crypto"

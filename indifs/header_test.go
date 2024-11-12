@@ -1,4 +1,4 @@
-package ifs
+package indifs
 
 import (
 	"encoding/hex"

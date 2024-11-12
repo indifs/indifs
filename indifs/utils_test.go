@@ -1,17 +1,18 @@
-package ifs
+package indifs
 
 import "testing"
 
 func Test_dirname(t *testing.T) {
-	assert(t, "" == dirname("/"))
-	assert(t, "/" == dirname("/a.txt"))
-	assert(t, "/" == dirname("/aa/"))
-	assert(t, "/aa/" == dirname("/aa/bb"))
-	assert(t, "/aa/bb/" == dirname("/aa/bb/cc.txt"))
+	assert(t, dirname("") == "")
+	assert(t, dirname("/") == "")
+	assert(t, dirname("/a.txt") == "/")
+	assert(t, dirname("/aa/") == "/")
+	assert(t, dirname("/aa/bb") == "/aa/")
+	assert(t, dirname("/aa/bb/cc.txt") == "/aa/bb/")
 }
 
 func Test_splitPath(t *testing.T) {
-	assertEq(t, splitPath("/Hello/世界/Abc01.txt"), []any{"Hello", "世界", "Abc01.txt"})
+	assertEq(t, splitPath("/Hello/世界/Abc01.txt"), []string{"Hello", "世界", "Abc01.txt"})
 }
 
 func Test_IsValidPath(t *testing.T) {
@@ -32,6 +33,7 @@ func Test_IsValidPath(t *testing.T) {
 	)) // path-length == 255
 	assert(t, IsValidPath("/aaa/.Abc01.txt"))
 
+	assert(t, !IsValidPath(""))
 	assert(t, !IsValidPath("/aaa/..Abc01.txt"))
 	assert(t, !IsValidPath("/aaa/  /Abc01.txt"))
 	assert(t, !IsValidPath("/aaa//Abc01.txt"))
@@ -48,8 +50,7 @@ func Test_IsValidPath(t *testing.T) {
 
 func assert(t *testing.T, ok bool) {
 	if !ok {
-		//t.Fatal()
-		panic(0)
+		t.Fatal()
 		//panic(string(debug.Stack()))
 	}
 }

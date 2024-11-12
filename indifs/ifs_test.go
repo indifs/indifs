@@ -1,11 +1,11 @@
-package ifs
+package indifs
 
 import (
 	"bytes"
 	"github.com/indifs/indifs/crypto"
 	"github.com/indifs/indifs/db"
 	"github.com/indifs/indifs/db/memdb"
-	"github.com/indifs/indifs/ifs/test_data"
+	"github.com/indifs/indifs/indifs/test_data"
 	"io"
 	"testing"
 	"time"
