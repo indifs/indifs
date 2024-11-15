@@ -4,11 +4,15 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"strconv"
 	"strings"
 )
 
 // IFS is Virtual File System
 type IFS interface {
+
+	// Root returns Header of filesystem (synonym of FileHeader(""))
+	Root() Header
 
 	// FileHeader returns Header of file or directory
 	FileHeader(path string) (Header, error)
@@ -35,7 +39,9 @@ type IFS interface {
 }
 
 const (
-	DefaultProtocol     = "0.1"
+	DefaultProtocol = "IndiFS/0.1"
+	protocolPrefix  = "IndiFS/"
+
 	DefaultFilePartSize = 1 << 20 // (1 MiB) – default file part size
 
 	MaxPathNameLength    = 255
@@ -59,6 +65,20 @@ var (
 	errParentDirNotFound  = errors.New("parent dir not found")
 	errParentDirIsDeleted = errors.New("parent dir is deleted")
 )
+
+func protocolVerMajor(ver string) uint8 {
+	return uint8(protocolVer64(ver) >> 56)
+}
+
+func protocolVer64(ver string) uint64 {
+	if strings.HasPrefix(ver, protocolPrefix) {
+		vv := strings.Split(ver[len(protocolPrefix):]+".", ".")
+		major, _ := strconv.Atoi(vv[0])
+		minor, _ := strconv.Atoi(vv[1])
+		return uint64(major<<56) | uint64(minor<<32)
+	}
+	return 0xffffffffffffffff
+}
 
 // IsValidPath says the path is valid
 func IsValidPath(path string) bool {
@@ -113,6 +133,9 @@ func splitPath(path string) (parts []string) {
 }
 
 func pathLess(a, b string) bool {
+	if a == "" || b == "" {
+		return a < b
+	}
 	A := splitPath(a)
 	B := splitPath(b)
 	nB := len(B)
@@ -123,7 +146,7 @@ func pathLess(a, b string) bool {
 			return Ai < B[i]
 		}
 	}
-	return true
+	return len(A) <= nB
 }
 
 func dirname(path string) string {
@@ -148,3 +171,39 @@ func VersionIsGreater(a, b Header) bool {
 	//}
 	return bytes.Compare(a.Hash(), b.Hash()) > 0
 }
+
+//func protocolVer64(ver string) (num uint64) {
+//
+//	const protocolPrefix = "IndiFS/"
+//	if strings.HasPrefix(ver, protocolPrefix) {
+//		ii:= strings.Split(ver[len(protocolPrefix):]+".",".")
+//		major ,_:=strconv.Atoi(ii[0])
+//		minor ,_:=strconv.Atoi(ii[1])
+//		return uint64(major<<56)|uint64(minor<<32)
+//	}
+//	return 0xffffffffffffffff
+//}
+//
+//func _parseProtocol(ver string) [] int {
+//	sliceMap( strings.Split(ver, ".") {
+//		n,_:=strconv.Atoi(v)
+//		p|=uint64(n)<<(64-(i+1)*16)
+//	}
+//	return
+//}
+//
+//func protocolVerLess(aVer, bVer string) bool {
+//	aa :=  splitProtocolVer(aVer)
+//	bb :=  splitProtocolVer(bVer)
+//
+//
+//	bb := strings.Split(bVer, ".")
+//	for ; len(aa)>0 && len(bb)>0; aa,bb=aa[1:],bb[1:] {
+//		if aa[0]!=bb[0] {
+//			a, _ := strconv.Atoi(aa[0])
+//			b, _ := strconv.Atoi(bb[0])
+//			return a < b
+//		}
+//	}
+//	return len(aa) < len(bb)
+//}

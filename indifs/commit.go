@@ -43,19 +43,22 @@ func (c *Commit) Trace() {
 }
 
 func MakeCommit(ifs IFS, prv crypto.PrivateKey, src fs.FS, ts time.Time) (commit *Commit, err error) {
-	defer catch(&err)
+	defer recoverError(&err)
 
-	root := tryVal(ifs.FileHeader("/"))
+	root := ifs.Root().Copy()   // root info
 	ver := root.Ver() + 1       // new ver
 	partSize := root.PartSize() //
 
 	files := newFilesReader()
-	commit = &Commit{Body: files}
+	commit = &Commit{
+		Headers: []Header{root},
+		Body:    files,
+	}
 
-	inBatch := map[string]bool{}
-	onDisk := map[string]bool{}
+	mCommit := map[string]bool{"": true}          //
+	mDisk := map[string]bool{"": true, "/": true} // on disk
 
-	var hh []Header
+	var newHH = []Header{root} // new fs headers
 	var diskWalk func(string)
 	diskWalk = func(path string) {
 		if !IsValidPath(path) {
@@ -68,30 +71,30 @@ func MakeCommit(ifs IFS, prv crypto.PrivateKey, src fs.FS, ts time.Time) (commit
 		if !exists {
 			h = Header{{headerPath, []byte(path)}}
 		}
-		onDisk[path] = true
+		mDisk[path] = true
 		var fileMerkle []byte
 		var fileSize int64
 		if !isDir {
 			fileSize, fileMerkle, _ = fsMerkleRoot(src, dfsPath, partSize)
 		}
-		if path == "/" || !exists || !isDir && !bytes.Equal(h.GetBytes(headerFileMerkle), fileMerkle) { // not exists or changed
+		if path == "/" || !exists || !isDir && !bytes.Equal(h.GetBytes(headerMerkleHash), fileMerkle) { // not exists or changed
 			h.SetInt(headerVer, ver) // set new version
 			if !isDir {
 				h.SetInt(headerFileSize, fileSize)
-				h.SetBytes(headerFileMerkle, fileMerkle)
+				h.SetBytes(headerMerkleHash, fileMerkle)
 				files.add(func() (io.ReadCloser, error) {
 					return src.Open(dfsPath)
 				})
 			}
 			commit.Headers = append(commit.Headers, h)
-			inBatch[path], hh = true, append(hh, h)
+			mCommit[path], newHH = true, append(newHH, h)
 		}
 		if isDir { //- read dir
 			if dfsPath == "" {
 				dfsPath = "."
 			}
 			dfsPath = strings.TrimSuffix(dfsPath, "/")
-			dd := tryVal(fs.ReadDir(src, dfsPath))
+			dd := mustVal(fs.ReadDir(src, dfsPath))
 			dd = sliceFilter(dd, func(f fs.DirEntry) bool { // exclude invalid names
 				return isValidPathName(f.Name())
 			})
@@ -114,16 +117,16 @@ func MakeCommit(ifs IFS, prv crypto.PrivateKey, src fs.FS, ts time.Time) (commit
 	var vfsWalk func(Header)
 	vfsWalk = func(h Header) {
 		path := h.Path()
-		if !onDisk[path] { // delete node
+		if !mDisk[path] { // delete node
 			h = Header{{headerPath, []byte(path)}}
 			h.SetInt(headerVer, ver)
 			h.SetInt(headerDeleted, 1)
-			hh = append(hh, h)
+			newHH = append(newHH, h)
 			commit.Headers = append(commit.Headers, h)
 			return // skip all child nodes
 		}
-		if !inBatch[path] {
-			hh = append(hh, h)
+		if !mCommit[path] {
+			newHH = append(newHH, h)
 		}
 		ff := valExcludedNotFound(ifs.ReadDir(path))
 		for _, h := range ff {
@@ -134,9 +137,9 @@ func MakeCommit(ifs IFS, prv crypto.PrivateKey, src fs.FS, ts time.Time) (commit
 
 	//-- calc new commit merkle
 	sortHeaders(commit.Headers)
-	sortHeaders(hh)
-	newTree := tryVal(indexTree(hh))
-	ndRoot := newTree["/"]
+	sortHeaders(newHH)
+	newTree := mustVal(indexTree(newHH))
+	ndRoot := newTree[""]
 
 	//--- set merkle + sign
 	newRoot := &commit.Headers[0]
@@ -144,16 +147,17 @@ func MakeCommit(ifs IFS, prv crypto.PrivateKey, src fs.FS, ts time.Time) (commit
 		newRoot.SetTime(headerCreated, ts)
 	}
 	newRoot.SetTime(headerUpdated, ts)
+	newRoot.SetInt(headerVer, ver)
 	newRoot.SetInt(headerTreeVolume, ndRoot.totalVolume())
-	newRoot.SetBytes(headerTreeMerkle, ndRoot.childrenMerkleRoot())
+	newRoot.SetBytes(headerMerkleHash, ndRoot.childrenMerkleRoot())
 	newRoot.Sign(prv)
 	return
 }
 
 func fsMerkleRoot(dfs fs.FS, path string, partSize int64) (size int64, merkle []byte, hashes [][]byte) {
-	f := tryVal(dfs.Open(path))
+	f := mustVal(dfs.Open(path))
 	defer f.Close()
 	w := crypto.NewMerkleHash(partSize)
-	tryVal(io.Copy(w, f))
+	mustVal(io.Copy(w, f))
 	return w.Written(), w.Root(), w.Leaves()
 }

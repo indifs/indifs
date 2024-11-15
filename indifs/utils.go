@@ -5,57 +5,38 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
-	"os"
 	"strings"
 )
 
-var testMode = len(os.Args) > 1 && strings.HasPrefix(os.Args[1], "-test.")
+func require(f bool, err any) {
+	if !f {
+		_checkError(toError(err))
+	}
+}
 
-func tryVal[T any](v T, err error) T {
-	try(err)
+func mustOK(err error) {
+	_checkError(err)
+}
+
+func mustVal[T any](v T, err error) T {
+	_checkError(err)
 	return v
-}
-
-func tryVal2[T1, T2 any](v1 T1, v2 T2, err error) (T1, T2) {
-	try(err)
-	return v1, v2
-}
-
-func tryVal3[T1, T2, T3 any](v1 T1, v2 T2, v3 T3, err error) (T1, T2, T3) {
-	try(err)
-	return v1, v2, v3
 }
 
 func valExcludedNotFound[T any](v T, err error) T {
 	if err != ErrNotFound {
-		try(err)
+		_checkError(err)
 	}
 	return v
 }
 
-func excludeErr(err, errConst error) error {
-	if err == errConst {
-		return nil
-	}
-	return err
-}
-
-func try(err error) {
+var _checkError = func(err error) {
 	if err != nil {
-		log.Panic(err)
-		//_, file, line, _ := runtime.Caller(1)
-		//log.Panic(fmt.Errorf("%w\n\t%s:%d", err, file, line))
+		panic(err)
 	}
 }
 
-func require(f bool, err any) {
-	if !f {
-		try(toError(err))
-	}
-}
-
-func catch(err *error) {
+func recoverError(err *error) {
 	//if testMode {
 	//	return
 	//}
@@ -107,26 +88,14 @@ func bContainOnly(s, chars []byte) bool {
 }
 
 func toJSON(v any) string {
-	return string(tryVal(json.Marshal(v)))
+	return string(mustVal(json.Marshal(v)))
 }
 
 func decodeJSON(data string) (v any) {
-	try(json.Unmarshal([]byte(data), &v))
+	mustOK(json.Unmarshal([]byte(data), &v))
 	return
 }
 
 func toIndentJSON(v any) string {
-	return string(tryVal(json.MarshalIndent(v, "", "  ")))
-}
-
-func trace(title string, v any) {
-	if !testMode {
-		return
-	}
-	println(title)
-	if v, ok := v.(interface{ Trace() }); ok {
-		v.Trace()
-		return
-	}
-	println("====== TRACE: ", toIndentJSON(v))
+	return string(mustVal(json.MarshalIndent(v, "", "  ")))
 }

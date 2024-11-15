@@ -12,17 +12,20 @@ type fsNode struct {
 }
 
 func indexTree(hh []Header) (tree map[string]*fsNode, err error) {
+
+	//println("============indexTree ")
+	//traceHeaders(hh)
+
+	require(len(hh) > 0 && hh[0].IsRoot(), "indexTree-error")
 	tree = make(map[string]*fsNode, len(hh))
-	for _, h := range hh {
+	tree[""] = &fsNode{Header: hh[0]}
+	for _, h := range hh[1:] {
 		path := h.Path()
 		if tree[path] != nil { // can`t repeat
 			return nil, errSeveralNodes
 		}
 		nd := &fsNode{Header: h, path: path}
 		tree[path] = nd
-		if path == "/" {
-			continue
-		}
 		if p := tree[dirname(path)]; p == nil { // find parent node
 			return nil, errParentDirNotFound
 		} else if p.Header.Deleted() {
@@ -55,7 +58,7 @@ func (nd *fsNode) deleted() bool {
 }
 
 func (nd *fsNode) isDir() bool {
-	return strings.HasSuffix(nd.path, "/")
+	return nd.path == "" || strings.HasSuffix(nd.path, "/")
 }
 
 func (nd *fsNode) hasFile(path string) bool {
@@ -87,7 +90,7 @@ func (nd *fsNode) merkleWitness(path string) []byte {
 }
 
 func (nd *fsNode) totalVolume() (n int64) {
-	if nd.path != "/" { // exclude root
+	if nd.path != "" { // exclude root
 		n += nd.Header.totalVolume()
 	}
 	for _, c := range nd.children {

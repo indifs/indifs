@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/indifs/indifs/crypto"
 	"sort"
 	"strconv"
@@ -36,28 +37,27 @@ var errInvalidJSON = errors.New("invalid JSON")
 // predefined header-field-names
 const (
 	// root header fields
-	headerProtocol   = "Protocol"    //
-	headerPublicKey  = "Public-Key"  //
-	headerSignature  = "Signature"   //
-	headerTreeVolume = "Volume"      // volume of full file tree
-	headerTreeMerkle = "Merkle-Root" // root merkle of full file tree
+	headerProtocol   = "Protocol"   //
+	headerPublicKey  = "Public-Key" //
+	headerSignature  = "Signature"  //
+	headerTreeVolume = "Volume"     // volume of full file tree
+	//headerTreeMerkle = "Merkle-Root" // root merkle of full file tree
 
 	// general
-	headerVer     = "Ver"     // file or dir-version
-	headerPath    = "Path"    // file or dir-path
-	headerCreated = "Created" //
-	headerUpdated = "Updated" //
-	headerDeleted = "Deleted" //
+	headerVer        = "Ver"     // file or dir-version
+	headerPath       = "Path"    // file or dir-path
+	headerCreated    = "Created" //
+	headerUpdated    = "Updated" //
+	headerDeleted    = "Deleted" //
+	headerMerkleHash = "Merkle"  // content hash := MerkleRoot(fileParts...) | MerkleRoot(dirHeaders...)
 
 	// files
 	headerFileSize     = "Size"      // file size
-	headerFileMerkle   = "Merkle"    // file merkle := MerkleRoot(fileParts...)
 	headerFilePartSize = "Part-Size" // file part size
 )
 
 func NewRootHeader(pub crypto.PublicKey) (h Header) {
 	h.Add(headerProtocol, DefaultProtocol)
-	h.Add(headerPath, "/")
 	h.AddInt(headerVer, 0)
 	h.AddInt(headerFilePartSize, DefaultFilePartSize)
 	h.SetPublicKey(pub)
@@ -218,6 +218,10 @@ func (h *Header) AddInt(key string, value int64) {
 	h.Add(key, strconv.FormatInt(value, 10))
 }
 
+func (h *Header) AddNum(key string, value float64) {
+	h.Add(key, fmt.Sprint(value))
+}
+
 func (h *Header) AddTime(key string, value time.Time) {
 	h.Add(key, value.Format(time.RFC3339))
 }
@@ -270,12 +274,17 @@ func (h Header) Path() string {
 	return h.Get(headerPath)
 }
 
+func (h Header) IsRoot() bool {
+	return !h.Has(headerPath)
+}
+
 func (h Header) IsDir() bool {
-	return strings.HasSuffix(h.Path(), "/")
+	return !h.IsFile()
 }
 
 func (h Header) IsFile() bool {
-	return !h.IsDir()
+	path := h.Path()
+	return path != "" && path[len(path)-1] != '/' // !HasSuffix(path, "/")
 }
 
 func (h Header) Deleted() bool {
@@ -303,12 +312,8 @@ func (h Header) FileSize() int64 {
 	return h.GetInt(headerFileSize)
 }
 
-func (h Header) FileMerkle() []byte {
-	return h.GetBytes(headerFileMerkle)
-}
-
-func (h Header) TreeMerkleRoot() []byte {
-	return h.GetBytes(headerTreeMerkle)
+func (h Header) MerkleHash() []byte {
+	return h.GetBytes(headerMerkleHash)
 }
 
 //--------- root-header crypto methods ----------
@@ -345,16 +350,20 @@ func (h Header) Verify() bool {
 
 func ValidateHeader(h Header) error {
 	for _, v := range h {
-		if len(v.Name) > MaxHeaderNameLength ||
-			len(v.Value) > MaxHeaderValueLength ||
-			!containsOnly(v.Name, headerNameCharset) {
+		if !isValidHeaderField(v) {
 			return errInvalidHeader
 		}
 	}
-	if !IsValidPath(h.Path()) {
+	if h.Has(headerPath) && !IsValidPath(h.Path()) {
 		return errInvalidPath
 	}
 	return nil
+}
+
+func isValidHeaderField(v HeaderField) bool {
+	return len(v.Name) <= MaxHeaderNameLength &&
+		len(v.Value) <= MaxHeaderValueLength &&
+		containsOnly(v.Name, headerNameCharset)
 }
 
 func sortHeaders(hh []Header) {
