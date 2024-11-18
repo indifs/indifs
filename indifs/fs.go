@@ -241,20 +241,22 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 		updated[path] = h
 
 		// verify commit-content
-		if h.IsRoot() {
-			require(h.Has(headerMerkleHash), "invalid commit-header")
-			require(h.Has(headerTreeVolume), "invalid commit-header")
+		hasMerkle := h.Has(headerMerkleHash)
+		if hasMerkle {
+			require(len(h.MerkleHash()) == crypto.HashSize, "invalid commit-header")
+		}
+		switch {
+		case h.IsRoot():
+			require(hasMerkle, "invalid commit-header")
 			require(!h.Deleted(), "invalid commit-header")
-		} else if h.IsDir() || h.Deleted() { // dir or deleted file
-			require(!h.Has(headerMerkleHash), "invalid commit-header")
-			require(!h.Has(headerFileSize), "invalid commit-header")
-		} else { // is not deleted file
-			require(
-				h.FileSize() == 0 && !h.Has(headerMerkleHash) || h.FileSize() > 0 && len(h.MerkleHash()) == crypto.HashSize,
-				"invalid commit-header",
-			)
+			require(h.Has(headerTreeVolume), "invalid commit-header")
+
+		case h.IsFile():
+			isZeroLenFile := h.FileSize() == 0 // or is deleted
+			require(isZeroLenFile != hasMerkle, "invalid commit-header")
 		}
 		if h.Deleted() { // delete all sub-files
+			require(h.FileSize() == 0, "invalid commit-header")
 			curTree[path].walk(func(nd *fsNode) bool {
 				if !nd.isDir() && nd.Header.FileSize() > 0 {
 					delFiles[nd.path] = true
@@ -300,6 +302,8 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 	//if rootPartSize == 0 {
 	//	rootPartSize = DefaultFilePartSize
 	//}
+
+	// verify dir`s Merkle-header
 
 	//--- verify and put file content
 	mustOK(f.db.Execute(func(tx db.Transaction) (err error) {
