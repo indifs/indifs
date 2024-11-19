@@ -303,7 +303,14 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 	//	rootPartSize = DefaultFilePartSize
 	//}
 
-	// verify dir`s Merkle-header
+	//--- verify dir`s Merkle-header
+	newRoot.walk(func(nd *fsNode) bool {
+		if nd.isDir() && !nd.isRoot() {
+			require(!nd.Header.Has(headerMerkleHash) ||
+				bytes.Equal(nd.Header.MerkleHash(), nd.childrenMerkleRoot()), "invalid commit dir-Merkle")
+		}
+		return true
+	})
 
 	//--- verify and put file content
 	mustOK(f.db.Execute(func(tx db.Transaction) (err error) {
