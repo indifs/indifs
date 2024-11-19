@@ -57,8 +57,12 @@ func (nd *fsNode) deleted() bool {
 	return nd != nil && nd.Header.Deleted()
 }
 
+func (nd *fsNode) isRoot() bool {
+	return nd.path == ""
+}
+
 func (nd *fsNode) isDir() bool {
-	return nd.path == "" || strings.HasSuffix(nd.path, "/")
+	return strings.HasSuffix(nd.path, "/") || nd.isRoot()
 }
 
 func (nd *fsNode) hasFile(path string) bool {
