@@ -16,7 +16,7 @@ type Transaction interface {
 	Delete(key string) error
 }
 
-func GetJSON(db Storage, key string, v interface{}) (err error) {
+func GetJSON(db Storage, key string, v any) (err error) {
 	fl, err := db.Open(key)
 	if err != nil || fl == nil {
 		return
@@ -29,7 +29,7 @@ func GetJSON(db Storage, key string, v interface{}) (err error) {
 	return json.Unmarshal(data, v)
 }
 
-func PutJSON(db Transaction, key string, v interface{}) error {
+func PutJSON(db Transaction, key string, v any) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err

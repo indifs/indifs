@@ -8,50 +8,60 @@ import (
 	"sync"
 )
 
-type memDB map[string][]byte
-
-type memTx memDB
-
-type memValue struct { // implements io.ReadSeekCloser
-	*bytes.Reader
+// memDB implements db.Storage
+type memDB struct {
+	mx   sync.RWMutex
+	data map[string][]byte
 }
 
-func (v memValue) Close() error {
-	return nil
-}
-
-func (s memDB) Get(key string) ([]byte, error) {
-	return s[key], nil
-}
-
-func (s memDB) Open(key string) (io.ReadSeekCloser, error) {
-	return memValue{bytes.NewReader(s[key])}, nil
-}
-
-var memDBMx sync.Mutex
-
-func (s memDB) Execute(fn func(db.Transaction) error) (err error) {
-	defer recoverErr(&err)
-	memDBMx.Lock()
-	defer memDBMx.Unlock()
-	return fn(memTx(s))
-}
-
-func (s memTx) Put(key string, value io.Reader) (err error) {
-	s[key], err = io.ReadAll(value)
-	return
-}
-
-func (s memTx) Delete(key string) error {
-	delete(s, key)
-	return nil
+// memTx implements db.Transaction
+type memTx struct {
+	db *memDB
 }
 
 func New() db.Storage {
-	return &memDB{}
+	return &memDB{data: map[string][]byte{}}
 }
 
-func recoverErr(err *error) {
+func (s *memDB) Get(key string) ([]byte, error) {
+	s.mx.RLock()
+	defer s.mx.RUnlock()
+	return s.data[key], nil
+}
+
+func (s *memDB) Open(key string) (io.ReadSeekCloser, error) {
+	s.mx.RLock()
+	defer s.mx.RUnlock()
+	return readSeekCloser{bytes.NewReader(s.data[key])}, nil
+}
+
+func (s *memDB) Execute(fn func(db.Transaction) error) (err error) {
+	defer catch(&err)
+	s.mx.Lock()
+	defer s.mx.Unlock()
+	return fn(memTx{s})
+}
+
+func (tx memTx) Put(key string, value io.Reader) (err error) {
+	tx.db.data[key], err = io.ReadAll(value)
+	return
+}
+
+func (tx memTx) Delete(key string) error {
+	delete(tx.db.data, key)
+	return nil
+}
+
+// readSeekCloser implements io.ReadSeekCloser
+type readSeekCloser struct {
+	*bytes.Reader
+}
+
+func (v readSeekCloser) Close() error {
+	return nil
+}
+
+func catch(err *error) {
 	if r := recover(); r != nil {
 		*err = fmt.Errorf("%v", r)
 	}
