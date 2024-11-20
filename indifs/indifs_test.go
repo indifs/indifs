@@ -11,6 +11,17 @@ import (
 	"time"
 )
 
+func Test_protocolVer64(t *testing.T) {
+	assert(t, protocolVer64("IndiFS/0.1") == 0x0000000100000000)
+	assert(t, protocolVer64("UNKNOWN/0.1") == 0xffffffffffffffff)
+}
+
+func Test_protocolVerMajor(t *testing.T) {
+	assert(t, protocolVerMajor("IndiFS/0.1") == 0)
+	assert(t, protocolVerMajor("IndiFS/1") == 1)
+	assert(t, protocolVerMajor("UnknownPrefixFS/0.1") == 255)
+}
+
 func TestMakeCommit(t *testing.T) {
 
 	s := newMemIFS()
@@ -18,6 +29,8 @@ func TestMakeCommit(t *testing.T) {
 	//---------- commit-1 (init data)
 	commit1 := makeTestCommit(s, "commit1")
 	assert(t, len(commit1.Headers) > 1)
+	assert(t, commit1.Headers[0].IsRoot())
+	assert(t, commit1.Headers[1].Path() == "/")
 	assert(t, commit1.Ver() == 1)
 	trace("====== commit1", commit1)
 
@@ -32,7 +45,7 @@ func TestMakeCommit(t *testing.T) {
 
 	//------ repeat commit-1 (the same files; changed root-header only)
 	commit1A := makeTestCommit(s, "commit1")
-	assert(t, len(commit1A.Headers) == 1)
+	assert(t, len(commit1A.Headers) == 2)
 	assert(t, commit1A.Ver() == 2)
 
 	err = s.Commit(commit1A)
@@ -67,7 +80,7 @@ func TestMakeCommit(t *testing.T) {
 	//------ make invalid commit-3
 	invalidCommit = makeTestCommit(s, "commit3")
 	h = &invalidCommit.Headers[len(invalidCommit.Headers)-1]
-	h.SetBytes("Merkle", append(h.FileMerkle(), 0)) // modify commit: modify header Merkle for last line (readme.txt)
+	h.SetBytes("Merkle", append(h.MerkleHash(), 0)) // modify commit: modify header Merkle for last line (readme.txt)
 	trace("====== invalid commit-3", invalidCommit)
 	err = s.Commit(invalidCommit)
 	assert(t, err != nil)
@@ -143,8 +156,7 @@ func TestFileSystem_GetCommit(t *testing.T) {
 
 	//--------
 	s1 := applyCommit(newMemIFS(), "commit1")
-	r1, err := s1.FileHeader("/")
-	assert(t, err == nil)
+	r1 := s1.Root()
 
 	// request commit from current version
 	commit1, err := s3.GetCommit(r1.Ver())
@@ -154,7 +166,7 @@ func TestFileSystem_GetCommit(t *testing.T) {
 
 	err = s1.Commit(commit1)
 	assert(t, err == nil)
-	assert(t, toJSON(fsHeaders(s3)) == toJSON(fsHeaders(s1)))
+	assertEqual(t, fsHeaders(s3), fsHeaders(s1))
 
 	//--------
 	s2 := applyCommit(newMemIFS(), "commit1")
@@ -167,14 +179,14 @@ func TestFileSystem_GetCommit(t *testing.T) {
 
 	err = s2.Commit(commit2)
 	assert(t, err == nil)
-	assert(t, toJSON(fsHeaders(s3)) == toJSON(fsHeaders(s2)))
+	assertEqual(t, fsHeaders(s3), fsHeaders(s2))
 
 }
 
 func TestFileSystem_FileMerkleWitness(t *testing.T) {
 	s := applyCommit(newMemIFS(), "commit1")
 	hh := fsHeaders(s)
-	merkleRoot := hh[0].TreeMerkleRoot()
+	merkleRoot := hh[0].MerkleHash()
 
 	for _, h := range hh[1:] {
 		// make merkle witness for each file
@@ -191,15 +203,14 @@ func TestFileSystem_FileMerkleWitness(t *testing.T) {
 		if h.IsFile() {
 			parts, err := s.FileParts(h.Path())
 			assert(t, err == nil)
-			assert(t, bytes.Equal(h.FileMerkle(), crypto.MerkleRoot(parts...)))
+			assert(t, bytes.Equal(h.MerkleHash(), crypto.MerkleRoot(parts...)))
 		}
 	}
 }
 
 func makeTestCommit(vfs IFS, commitName string) *Commit {
-	hRoot := tryVal(vfs.FileHeader("/"))
-	tCommit := hRoot.Updated().Add(time.Second)
-	return tryVal(MakeCommit(vfs, testPrv, test_data.FS(commitName), tCommit))
+	tCommit := vfs.Root().Updated().Add(time.Second)
+	return mustVal(MakeCommit(vfs, testPrv, test_data.FS(commitName), tCommit))
 }
 
 func fsHeaders(f IFS) (hh []Header) {
@@ -207,22 +218,25 @@ func fsHeaders(f IFS) (hh []Header) {
 }
 
 func newMemIFS() IFS {
-	var t0 = tryVal(time.Parse("2006-01-02 15:04:05", "2024-11-05 00:00:00"))
+	var t0 = mustVal(time.Parse("2006-01-02 15:04:05", "2024-11-05 00:00:00"))
 
 	d := memdb.New()
-	try(d.Execute(func(tx db.Transaction) error { // init DB
+	mustOK(d.Execute(func(tx db.Transaction) error { // init DB
 		h0 := NewRootHeader(testPub)
 		h0.SetTime("Created", t0)
 		h0.SetTime("Updated", t0)
 		h0.SetInt(headerFilePartSize, 1024)
-		return db.PutJSON(tx, dbKeyHeaders, []Header{h0})
+		h1 := Header{}
+		h1.Add(headerPath, "/")
+		h1.AddInt(headerVer, h0.Ver())
+		return db.PutJSON(tx, dbKeyHeaders, []Header{h0, h1})
 	}))
-	return tryVal(OpenFS(testPub, d))
+	return mustVal(OpenFS(testPub, d))
 }
 
 func applyCommit(f IFS, commitName ...string) IFS {
 	for _, name := range commitName {
-		try(f.Commit(makeTestCommit(f, name)))
+		mustOK(f.Commit(makeTestCommit(f, name)))
 	}
 	return f
 }

@@ -15,10 +15,12 @@ var (
 		{"Ver", []byte("1")},
 		{"Title", []byte("Hello, 世界")},
 		{"Description", []byte("Test header")},
-		{"Path", []byte("/")},
 		{"Created", []byte("2022-01-01T01:02:03Z")},
 		{"Updated", []byte("2022-01-01T01:02:03Z")},
 		{"Part-Size", []byte("1024")},
+	}, {
+		{"Ver", []byte("1")},
+		{"Path", []byte("/")},
 	}, {
 		{"Ver", []byte("1")},
 		{"Path", []byte("/dir/")},
@@ -38,12 +40,14 @@ const testHeadersJSON = `[{
 	"Ver":"1",
 	"Title":"b64,SGVsbG8sIOS4lueVjA",
 	"Description":"Test header",
-	"Path":"/",
 	"Created":"2022-01-01T01:02:03Z",
 	"Updated":"2022-01-01T01:02:03Z",
 	"Part-Size":"1024",
 	"Public-Key":"Ed25519,pms+pTAx/wOs+rx9Gy4wbdMWR/iz6MkEUBGlPF121GU=",
-	"Signature":"b64,HbG7v7CRU9En1Z4hp8jRN6py83aZMAbVJEVar8+CdFBPqTNgOkXG19MwyYHp4c4EmK4ya60cGsxXMwM4dHZEBQ"
+	"Signature":"b64,Q4YmNXtV2avPrCl5r9cJfW1HVZWUQq781te2sdCgbdlW1ticCFMSwJeuEvGqpiZm7Xj6xq6Px0E7+V448HjBBA"
+},{
+	"Ver":"1",
+	"Path":"/"
 },{
 	"Ver":"1",
 	"Path":"/dir/"
@@ -72,12 +76,11 @@ func TestHeader_String(t *testing.T) {
 		"Ver":         "1",
 		"Title":       "b64,SGVsbG8sIOS4lueVjA",
 		"Description": "Test header",
-		"Path":        "/",
 		"Created":     "2022-01-01T01:02:03Z",
 		"Updated":     "2022-01-01T01:02:03Z",
 		"Part-Size":   "1024",
 		"Public-Key":  "Ed25519,pms+pTAx/wOs+rx9Gy4wbdMWR/iz6MkEUBGlPF121GU=",
-		"Signature":   "b64,HbG7v7CRU9En1Z4hp8jRN6py83aZMAbVJEVar8+CdFBPqTNgOkXG19MwyYHp4c4EmK4ya60cGsxXMwM4dHZEBQ"
+		"Signature":   "b64,Q4YmNXtV2avPrCl5r9cJfW1HVZWUQq781te2sdCgbdlW1ticCFMSwJeuEvGqpiZm7Xj6xq6Px0E7+V448HjBBA"
 	}`))
 }
 
@@ -91,7 +94,7 @@ func TestHeader_UnmarshalJSON(t *testing.T) {
 	err := json.Unmarshal([]byte(testHeadersJSON), &hh)
 
 	assert(t, err == nil)
-	assert(t, toJSON(testHeaders) == toJSON(hh))
+	assertEqual(t, testHeaders, hh)
 }
 
 func TestHeader_Hash(t *testing.T) {
@@ -99,7 +102,7 @@ func TestHeader_Hash(t *testing.T) {
 	h0 := testHeaders[0]
 	hash := hex.EncodeToString(h0[:len(h0)-1].Hash())
 
-	assert(t, "6ff712987e55d5efbb6005e05752e8748d046bc1ab6d41994b79a9c044472c0c" == hash)
+	assert(t, hash == "436ba5c95f06a88236297e5733e89c758b3528753a592eeb305110f29821f7ab")
 }
 
 func TestHeader_Verify(t *testing.T) {

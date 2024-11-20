@@ -1,6 +1,11 @@
 package indifs
 
-import "testing"
+import (
+	"fmt"
+	"log"
+	"runtime"
+	"testing"
+)
 
 func Test_dirname(t *testing.T) {
 	assert(t, dirname("") == "")
@@ -12,7 +17,37 @@ func Test_dirname(t *testing.T) {
 }
 
 func Test_splitPath(t *testing.T) {
-	assertEq(t, splitPath("/Hello/世界/Abc01.txt"), []string{"Hello", "世界", "Abc01.txt"})
+	assertEqual(t, splitPath(""), nil)
+	assertEqual(t, splitPath("/"), nil)
+	assertEqual(t, splitPath("/Hello/世界/Abc01.txt"), []string{"Hello", "世界", "Abc01.txt"})
+}
+
+func Test_sortHeaders(t *testing.T) {
+	newHeader := func(path string) Header { return Header{{Name: "Path", Value: []byte(path)}} }
+
+	hh := []Header{
+		newHeader("/abc/"),
+		newHeader("/def/2.txt"),
+		newHeader("/abc/1.txt"),
+		newHeader(""),
+		newHeader("/def/1.txt"),
+		newHeader("/def/"),
+		newHeader("/"),
+		newHeader("/abc/2.txt"),
+	}
+
+	sortHeaders(hh)
+
+	assertEqual(t, hh, []Header{
+		newHeader(""),
+		newHeader("/"),
+		newHeader("/abc/"),
+		newHeader("/abc/1.txt"),
+		newHeader("/abc/2.txt"),
+		newHeader("/def/"),
+		newHeader("/def/1.txt"),
+		newHeader("/def/2.txt"),
+	})
 }
 
 func Test_IsValidPath(t *testing.T) {
@@ -50,15 +85,38 @@ func Test_IsValidPath(t *testing.T) {
 
 func assert(t *testing.T, ok bool) {
 	if !ok {
-		t.Fatal()
-		//panic(string(debug.Stack()))
+		//t.Fail()
+		_, file, line, _ := runtime.Caller(1)
+		//t.Logf("ASSERT-ERROR %s:%d", file, line)
+		t.Errorf("ASSERT-ERROR %s:%d", file, line)
+		panic("assert-error")
 	}
 }
 
-func assertEq(t *testing.T, a, b any) {
+func trace(title string, v any) {
+	//_, file, line, _ := runtime.Caller(1)
+	//log.Panic(fmt.Errorf("%w\n\t%s:%d", err, file, line))
+	println(title)
+	if v, ok := v.(interface{ Trace() }); ok {
+		v.Trace()
+		return
+	}
+	println("====== TRACE: ", toIndentJSON(v))
+}
+
+func assertEqual(t *testing.T, a, b any) {
 	assert(t, equalJSON(toJSON(a), toJSON(b)))
 }
 
 func equalJSON(a, b string) bool {
 	return a == b || toJSON(decodeJSON(a)) == toJSON(decodeJSON(b))
+}
+
+func init() {
+	_checkError = func(err error) {
+		if err != nil {
+			_, file, line, _ := runtime.Caller(2)
+			log.Panic(fmt.Errorf("%w\n\t%s:%d", err, file, line))
+		}
+	}
 }
