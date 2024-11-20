@@ -40,6 +40,7 @@ func (f *fileSystem) setPartSize(size int64) {
 //}
 
 func (f *fileSystem) headers() (hh []Header) {
+	hh = make([]Header, 0, len(f.nodes))
 	for _, nd := range f.nodes {
 		hh = append(hh, nd.Header)
 	}
