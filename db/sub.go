@@ -2,8 +2,8 @@ package db
 
 import "io"
 
-func Sub(db Storage, prefix string) Storage {
-	return &subStorage{prefix, db}
+func Sub(db Storage, keyPrefix string) Storage {
+	return &subStorage{keyPrefix, db}
 }
 
 type subStorage struct {

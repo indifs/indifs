@@ -17,6 +17,11 @@ type Transaction interface {
 }
 
 func GetJSON(db Storage, key string, v any) (err error) {
+	if jsonDB, ok := db.(interface {
+		GetJSON(key string, v any) error
+	}); ok {
+		return jsonDB.GetJSON(key, v)
+	}
 	fl, err := db.Open(key)
 	if err != nil || fl == nil {
 		return
@@ -29,10 +34,15 @@ func GetJSON(db Storage, key string, v any) (err error) {
 	return json.Unmarshal(data, v)
 }
 
-func PutJSON(db Transaction, key string, v any) error {
+func PutJSON(tx Transaction, key string, v any) error {
+	if jsonDB, ok := tx.(interface {
+		PutJSON(key string, v any) error
+	}); ok {
+		return jsonDB.PutJSON(key, v)
+	}
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
 	}
-	return db.Put(key, bytes.NewBuffer(b))
+	return tx.Put(key, bytes.NewBuffer(b))
 }
