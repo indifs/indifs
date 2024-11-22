@@ -7,7 +7,7 @@ import (
 
 type PrivateKey []byte
 
-const SignatureSize = ed25519.SignatureSize
+const signatureSize = ed25519.SignatureSize
 
 func NewPrivateKeyFromSeed(seed string) PrivateKey {
 	return PrivateKey(ed25519.NewKeyFromSeed(Hash([]byte(seed))))

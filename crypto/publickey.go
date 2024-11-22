@@ -9,8 +9,9 @@ import (
 
 type PublicKey []byte
 
-const PublicKeySize = ed25519.PublicKeySize
+const publicKeySize = ed25519.PublicKeySize
 
+// TODO: add other encryption types
 const publicKeyEncodingPrefix = "Ed25519,"
 
 func (pub PublicKey) String() string {
@@ -22,18 +23,18 @@ func (pub PublicKey) Encode() string {
 }
 
 func (pub PublicKey) Equal(p PublicKey) bool {
-	return len(pub) == PublicKeySize && bytes.Equal(pub, p)
+	return len(pub) == publicKeySize && bytes.Equal(pub, p)
 }
 
 func (pub PublicKey) Verify(message, signature []byte) bool {
-	return len(pub) == PublicKeySize &&
-		len(signature) == SignatureSize &&
+	return len(pub) == publicKeySize &&
+		len(signature) == signatureSize &&
 		ed25519.Verify([]byte(pub), message, signature)
 }
 
 func DecodePublicKey(s string) PublicKey {
 	s = strings.TrimPrefix(s, publicKeyEncodingPrefix)
-	if p, _ := base64.StdEncoding.DecodeString(s); len(p) == PublicKeySize {
+	if p, _ := base64.StdEncoding.DecodeString(s); len(p) == publicKeySize {
 		return p
 	}
 	return nil
