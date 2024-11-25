@@ -5,7 +5,7 @@ import (
 	"github.com/indifs/indifs/crypto"
 	"github.com/indifs/indifs/db"
 	"github.com/indifs/indifs/db/memdb"
-	"github.com/indifs/indifs/indifs/test_data"
+	"github.com/indifs/indifs/test_data"
 	"io"
 	"testing"
 	"time"
