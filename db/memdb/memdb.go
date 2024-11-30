@@ -15,9 +15,7 @@ type memDB struct {
 }
 
 // memTx implements db.Transaction
-type memTx struct {
-	db *memDB
-}
+type memTx map[string][]byte
 
 func New() db.Storage {
 	return &memDB{data: map[string][]byte{}}
@@ -35,20 +33,35 @@ func (s *memDB) Open(key string) (io.ReadSeekCloser, error) {
 	return readSeekCloser{bytes.NewReader(s.data[key])}, nil
 }
 
-func (s *memDB) Execute(fn func(db.Transaction) error) (err error) {
-	defer catch(&err)
+func (s *memDB) Execute(fn func(db.Transaction) error) error {
 	s.mx.Lock()
 	defer s.mx.Unlock()
-	return fn(memTx{s})
+
+	tx := memTx{}
+	err := func() (err error) {
+		defer catch(&err)
+		return fn(tx)
+	}()
+	if err != nil {
+		return err
+	}
+	for key, val := range tx { // merge tx-data
+		if val != nil {
+			s.data[key] = val
+		} else {
+			delete(s.data, key)
+		}
+	}
+	return nil
 }
 
-func (tx memTx) Put(key string, value io.Reader) (err error) {
-	tx.db.data[key], err = io.ReadAll(value)
+func (tx memTx) Put(key string, r io.Reader) (err error) {
+	tx[key], err = io.ReadAll(r)
 	return
 }
 
 func (tx memTx) Delete(key string) error {
-	delete(tx.db.data, key)
+	tx[key] = nil
 	return nil
 }
 
