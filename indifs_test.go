@@ -208,9 +208,9 @@ func TestFileSystem_FileMerkleWitness(t *testing.T) {
 	}
 }
 
-func makeTestCommit(vfs IFS, commitName string) *Commit {
+func makeTestCommit(vfs IFS, commitID string) *Commit {
 	tCommit := vfs.Root().Updated().Add(time.Second)
-	return mustVal(MakeCommit(vfs, testPrv, test_data.FS(commitName), tCommit))
+	return mustVal(MakeCommit(vfs, testPrv, test_data.FS(commitID), tCommit))
 }
 
 func fsHeaders(f IFS) (hh []Header) {
