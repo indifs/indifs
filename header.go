@@ -56,6 +56,11 @@ const (
 	headerFilePartSize = "Part-Size" // file part size
 )
 
+func NewHeader(path string) (h Header) {
+	h.SetPath(path)
+	return
+}
+
 func NewRootHeader(pub crypto.PublicKey) (h Header) {
 	h.Add(headerProtocol, DefaultProtocol)
 	h.AddInt(headerVer, 0)
@@ -75,6 +80,7 @@ func (h Header) String() string {
 	return string(s)
 }
 
+// MarshalJSON implements json.Marshaler
 func (h Header) MarshalJSON() ([]byte, error) {
 	buf := bytes.NewBufferString("{")
 	for i, v := range h {
@@ -83,7 +89,7 @@ func (h Header) MarshalJSON() ([]byte, error) {
 		}
 		buf.Write(jsonMarshalKey(v.Name))
 		buf.WriteByte(':')
-		buf.Write(jsonMarshalValue(v.Value))
+		jsonMarshalValue(buf, v.Value)
 	}
 	buf.WriteByte('}')
 	return buf.Bytes(), nil
@@ -116,6 +122,17 @@ func (h *Header) UnmarshalJSON(data []byte) (err error) {
 	return
 }
 
+func (h Header) MarshalText() ([]byte, error) {
+	buf := bytes.NewBufferString(``)
+	for _, v := range h {
+		buf.WriteString(v.Name)
+		buf.WriteString(": ")
+		textMarshalValue(buf, v.Value)
+		buf.WriteByte('\n')
+	}
+	return buf.Bytes(), nil
+}
+
 func jsonMarshalKey(v string) []byte {
 	// todo: optimize it; use fast string marshaling
 	b, _ := json.Marshal(v)
@@ -127,16 +144,19 @@ var (
 	binValPfx   = []byte(headerBinaryValuePrefix)
 )
 
-func jsonMarshalValue(v []byte) []byte {
-	buf := bytes.NewBufferString(`"`)
+func jsonMarshalValue(buf *bytes.Buffer, v []byte) {
+	buf.WriteByte('"')
+	textMarshalValue(buf, v)
+	buf.WriteByte('"')
+}
+
+func textMarshalValue(buf *bytes.Buffer, v []byte) {
 	if bContainOnly(v, txtValChars) && !bytes.HasPrefix(v, binValPfx) {
 		buf.Write(v)
 	} else {
 		buf.Write(binValPfx)
 		buf.WriteString(base64.RawStdEncoding.EncodeToString(v))
 	}
-	buf.WriteByte('"')
-	return buf.Bytes()
 }
 
 func jsonUnmarshalValue(v string) ([]byte, error) {
@@ -272,6 +292,14 @@ func (h Header) totalVolume() int64 {
 
 func (h Header) Path() string {
 	return h.Get(headerPath)
+}
+
+func (h *Header) SetPath(path string) {
+	if path == "" {
+		h.Delete(headerPath)
+	} else {
+		h.Set(headerPath, path)
+	}
 }
 
 func (h Header) IsRoot() bool {
