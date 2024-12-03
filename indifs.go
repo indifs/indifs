@@ -32,8 +32,6 @@ type IFS interface {
 	// GetCommit makes commit starting from the given version
 	GetCommit(ver int64) (*Commit, error)
 
-	Get(request string) (*Commit, error)
-
 	// Commit applies a commit
 	Commit(*Commit) error
 }

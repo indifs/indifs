@@ -158,13 +158,6 @@ func (f *fileSystem) ReadDir(path string) ([]Header, error) {
 	return nil, ErrNotFound
 }
 
-func (f *fileSystem) Get(req string) (commit *Commit, err error) {
-	f.mx.RLock()
-	defer f.mx.RUnlock()
-
-	return
-}
-
 func (f *fileSystem) GetCommit(ver int64) (commit *Commit, err error) {
 	f.mx.RLock()
 	defer f.mx.RUnlock()
