@@ -94,7 +94,7 @@ func TestHeader_UnmarshalJSON(t *testing.T) {
 	err := json.Unmarshal([]byte(testHeadersJSON), &hh)
 
 	assert(t, err == nil)
-	assertEqual(t, testHeaders, hh)
+	assert(t, equal(testHeaders, hh))
 }
 
 func TestHeader_Hash(t *testing.T) {

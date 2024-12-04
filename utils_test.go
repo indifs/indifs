@@ -2,7 +2,6 @@ package indifs
 
 import (
 	"fmt"
-	"log"
 	"runtime"
 	"testing"
 )
@@ -17,9 +16,9 @@ func Test_dirname(t *testing.T) {
 }
 
 func Test_splitPath(t *testing.T) {
-	assertEqual(t, splitPath(""), nil)
-	assertEqual(t, splitPath("/"), nil)
-	assertEqual(t, splitPath("/Hello/世界/Abc01.txt"), []string{"Hello", "世界", "Abc01.txt"})
+	assert(t, equal(splitPath(""), nil))
+	assert(t, equal(splitPath("/"), nil))
+	assert(t, equal(splitPath("/Hello/世界/Abc01.txt"), []string{"Hello", "世界", "Abc01.txt"}))
 }
 
 func Test_sortHeaders(t *testing.T) {
@@ -38,7 +37,7 @@ func Test_sortHeaders(t *testing.T) {
 
 	sortHeaders(hh)
 
-	assertEqual(t, hh, []Header{
+	assert(t, equal(hh, []Header{
 		newHeader(""),
 		newHeader("/"),
 		newHeader("/abc/"),
@@ -47,7 +46,7 @@ func Test_sortHeaders(t *testing.T) {
 		newHeader("/def/"),
 		newHeader("/def/1.txt"),
 		newHeader("/def/2.txt"),
-	})
+	}))
 }
 
 func Test_IsValidPath(t *testing.T) {
@@ -104,8 +103,8 @@ func trace(title string, v any) {
 	println("====== TRACE: ", toIndentJSON(v))
 }
 
-func assertEqual(t *testing.T, a, b any) {
-	assert(t, equalJSON(toJSON(a), toJSON(b)))
+func equal(a, b any) bool {
+	return equalJSON(toJSON(a), toJSON(b))
 }
 
 func equalJSON(a, b string) bool {
@@ -116,7 +115,8 @@ func init() {
 	_checkError = func(err error) {
 		if err != nil {
 			_, file, line, _ := runtime.Caller(2)
-			log.Panic(fmt.Errorf("%w\n\t%s:%d", err, file, line))
+			//log.Panic(fmt.Errorf("%w\n\t%s:%d", err, file, line))
+			panic(fmt.Errorf("%w\n\t%s:%d", err, file, line))
 		}
 	}
 }
