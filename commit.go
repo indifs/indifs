@@ -11,6 +11,7 @@ import (
 )
 
 type Commit struct {
+	Info    Header
 	Headers []Header
 	Body    io.ReadCloser
 }
@@ -49,11 +50,20 @@ func MakeCommit(ifs IFS, prv crypto.PrivateKey, src fs.FS, ts time.Time) (commit
 	ver := root.Ver() + 1       // new ver
 	partSize := root.PartSize() //
 
+	if ts.IsZero() {
+		ts = time.Now()
+	}
+	if ts.Unix() <= root.Updated().Unix() {
+		ts = root.Updated().Add(time.Second)
+	}
+
 	files := newFilesReader()
 	commit = &Commit{
 		Headers: []Header{root},
 		Body:    files,
 	}
+	commit.Info.SetInt("PrevVer", root.Ver())
+	//commit.Info.SetBytes("PrevHash", root.Hash())
 
 	mCommit := map[string]bool{"": true}          //
 	mDisk := map[string]bool{"": true, "/": true} // on disk
@@ -69,7 +79,7 @@ func MakeCommit(ifs IFS, prv crypto.PrivateKey, src fs.FS, ts time.Time) (commit
 		h := valExcludedNotFound(ifs.FileHeader(path))
 		exists := h != nil
 		if !exists {
-			h = Header{{headerPath, []byte(path)}}
+			h = NewHeader(path)
 		}
 		mDisk[path] = true
 		var fileMerkle []byte
@@ -77,7 +87,7 @@ func MakeCommit(ifs IFS, prv crypto.PrivateKey, src fs.FS, ts time.Time) (commit
 		if !isDir {
 			fileSize, fileMerkle, _ = fsMerkleRoot(src, dfsPath, partSize)
 		}
-		if path == "/" || !exists || !isDir && !bytes.Equal(h.GetBytes(headerMerkleHash), fileMerkle) { // not exists or changed
+		if !exists || !isDir && !bytes.Equal(h.GetBytes(headerMerkleHash), fileMerkle) { // not exists or changed
 			h.SetInt(headerVer, ver) // set new version
 			if !isDir {
 				h.SetInt(headerFileSize, fileSize)
@@ -118,7 +128,7 @@ func MakeCommit(ifs IFS, prv crypto.PrivateKey, src fs.FS, ts time.Time) (commit
 	vfsWalk = func(h Header) {
 		path := h.Path()
 		if !mDisk[path] { // delete node
-			h = Header{{headerPath, []byte(path)}}
+			h = NewHeader(path)
 			h.SetInt(headerVer, ver)
 			h.SetInt(headerDeleted, 1)
 			newHH = append(newHH, h)
