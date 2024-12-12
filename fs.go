@@ -2,24 +2,28 @@ package indifs
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"github.com/indifs/indifs/crypto"
-	"github.com/indifs/indifs/db"
+	"github.com/indifs/indifs/database"
 	"io"
 	"sync"
 )
 
 type fileSystem struct {
+	id    string
 	pub   crypto.PublicKey
-	db    db.Storage
+	db    database.Storage
 	mx    sync.RWMutex
 	nodes map[string]*fsNode
 }
 
 const dbKeyHeaders = "."
 
-func OpenFS(pub crypto.PublicKey, db db.Storage) (_ IFS, err error) {
+func OpenFS(pub crypto.PublicKey, db database.Storage) (_ IFS, err error) {
 	defer recoverError(&err)
 	s := &fileSystem{
+		id:  fmt.Sprintf("ifs%X", pub[:16]),
 		pub: pub,
 		db:  db,
 	}
@@ -34,10 +38,6 @@ func (f *fileSystem) rootNode() *fsNode {
 func (f *fileSystem) setPartSize(size int64) {
 	f.rootNode().Header.SetInt(headerFilePartSize, size)
 }
-
-//func (f *fileSystem) PublicKey() crypto.PublicKey {
-//	return f.pub
-//}
 
 func (f *fileSystem) headers() (hh []Header) {
 	hh = make([]Header, 0, len(f.nodes))
@@ -54,11 +54,19 @@ func (f *fileSystem) Trace() {
 
 func (f *fileSystem) initDB() {
 	var hh []Header
-	mustOK(db.GetJSON(f.db, dbKeyHeaders, &hh))
+	f.dbGetJSON(dbKeyHeaders, &hh)
 	if hh == nil { // empty db
 		hh = []Header{NewRootHeader(f.pub)}
 	}
 	f.nodes = mustVal(indexTree(hh))
+}
+
+func (f *fileSystem) dbGetJSON(path string, v any) {
+	if r, err := f.db.OpenAt(f.id, path, 0); err != database.ErrNotFound {
+		if data := mustVal(io.ReadAll(mustVal(r, err))); len(data) > 0 {
+			must(json.Unmarshal(data, v))
+		}
+	}
 }
 
 func (f *fileSystem) fileHeader(path string) Header {
@@ -108,7 +116,7 @@ func (f *fileSystem) FileParts(path string) (hashes [][]byte, err error) {
 	if h == nil {
 		return nil, ErrNotFound
 	}
-	fl, err := f.db.Open(path)
+	fl, err := f.db.OpenAt(f.id, path, 0)
 	if err != nil {
 		return
 	}
@@ -125,28 +133,9 @@ func (f *fileSystem) FileParts(path string) (hashes [][]byte, err error) {
 	return w.Leaves(), nil
 }
 
-func (f *fileSystem) Open(path string) (io.ReadSeekCloser, error) {
-	return f.db.Open(path)
-}
-
 func (f *fileSystem) OpenAt(path string, offset int64) (io.ReadCloser, error) {
-	r, err := f.db.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	if _, err = r.Seek(offset, io.SeekStart); err != nil {
-		return nil, err
-	}
-	return r, nil
+	return f.db.OpenAt(f.id, path, offset)
 }
-
-//func (f *fileSystem) FileContent(path string, offset int64, size int) (data []byte, err error) {
-//	data, err = f.db.Get(path)
-//	if err == nil {
-//		data = data[offset : int(offset)+size]
-//	}
-//	return
-//}
 
 func (f *fileSystem) ReadDir(path string) ([]Header, error) {
 	f.mx.RLock()
@@ -176,7 +165,7 @@ func (f *fileSystem) GetCommit(ver int64) (commit *Commit, err error) {
 			// TODO: rr[] = f.getReader(path) ...;  commit.Body = io.MultiReader(rr...)
 			if size := h.FileSize(); size > 0 { // write file content to commit-body
 				w.add(func() (io.ReadCloser, error) {
-					return f.Open(nd.path)
+					return f.OpenAt(nd.path, 0)
 				})
 			}
 		}
@@ -229,7 +218,7 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 	updated := make(map[string]Header, len(commit.Headers))
 	hh := make([]Header, 0, len(commit.Headers)+len(curTree))
 	for _, h := range commit.Headers {
-		mustOK(ValidateHeader(h))
+		must(ValidateHeader(h))
 		path := h.Path()
 		hh = append(hh, h)
 		updated[path] = h
@@ -307,7 +296,7 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 	})
 
 	//--- verify and put file content
-	mustOK(f.db.Execute(func(tx db.Transaction) (err error) {
+	must(f.db.Execute(f.id, func(tx database.Transaction) (err error) {
 		defer recoverError(&err)
 		for _, h := range commit.Headers {
 			if !h.IsFile() {
@@ -322,7 +311,7 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 
 				r := io.LimitReader(commit.Body, hSize)
 				w := crypto.NewMerkleHash(partSize)
-				mustOK(tx.Put(h.Path(), io.TeeReader(r, w)))
+				must(tx.Put(h.Path(), hSize, io.TeeReader(r, w)))
 				require(w.Written() == hSize, "invalid commit-content")
 				require(bytes.Equal(w.Root(), h.MerkleHash()), "invalid commit-header Merkle")
 				delete(delFiles, h.Path())
@@ -330,7 +319,7 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 				//-------- v0
 				//cont := make([]byte, int(hSize))
 				//n, err := io.ReadFull(commit.Body, cont)
-				//mustOK(err)
+				//must(err)
 				//require(int64(n) == hSize, "invalid commit-content")
 				//
 				//merkle, _, _ := crypto.ReadMerkleRoot(bytes.NewBuffer(cont), hSize, partSize)
@@ -338,7 +327,7 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 				//require(bytes.Equal(h.MerkleHash(), merkle), "invalid commit-header Merkle")
 				//
 				//err = tx.Put(h.Path(), bytes.NewBuffer(cont))
-				//mustOK(err)
+				//must(err)
 				//delete(delFiles, h.Path())
 
 				//-----------
@@ -350,20 +339,21 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 				// todo: put content by hash (put if not exists, delete on error)
 				//key:=fmt.Sprintf("X%x", merkle[:16])
 				//exst, err:= f.db.Exists(key)
-				//mustOK(err)
+				//must(err)
 				//if !exst {
 				//	err = f.db.Put(key, bytes.NewBuffer(cont))
-				//	mustOK(err)
+				//	must(err)
 				//}
 			}
 		}
 
 		//--- delete old files (???) -----
 		for path := range delFiles {
-			mustOK(tx.Delete(path))
+			must(tx.Delete(path))
 		}
 		//--- save to Storage
-		mustOK(db.PutJSON(tx, dbKeyHeaders, hh))
+		data := mustVal(json.Marshal(hh))
+		must(tx.Put(dbKeyHeaders, int64(len(data)), bytes.NewReader(data)))
 		return
 	}))
 
