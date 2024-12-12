@@ -14,7 +14,7 @@ func require(f bool, err any) {
 	}
 }
 
-func mustOK(err error) {
+func must(err error) {
 	_checkError(err)
 }
 
@@ -37,11 +37,14 @@ var _checkError = func(err error) {
 }
 
 func recoverError(err *error) {
-	//if testMode {
-	//	return
-	//}
 	if r := recover(); r != nil {
 		*err = joinErrors(*err, toError(r))
+	}
+}
+
+func catchError(fn func(error)) {
+	if r := recover(); r != nil {
+		fn(toError(r))
 	}
 }
 
@@ -92,7 +95,7 @@ func toJSON(v any) string {
 }
 
 func decodeJSON(data string) (v any) {
-	mustOK(json.Unmarshal([]byte(data), &v))
+	must(json.Unmarshal([]byte(data), &v))
 	return
 }
 
