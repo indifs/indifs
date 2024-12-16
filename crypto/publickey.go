@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"encoding/base64"
+	"encoding/binary"
+	"encoding/hex"
 	"strings"
 )
 
@@ -20,6 +22,14 @@ func (pub PublicKey) String() string {
 
 func (pub PublicKey) Encode() string {
 	return publicKeyEncodingPrefix + base64.StdEncoding.EncodeToString(pub)
+}
+
+func (pub PublicKey) ID64() uint64 {
+	return binary.BigEndian.Uint64(pub[:8])
+}
+
+func (pub PublicKey) ID128() string {
+	return hex.EncodeToString(pub[:16])
 }
 
 func (pub PublicKey) Equal(p PublicKey) bool {
