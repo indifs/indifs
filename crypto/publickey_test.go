@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 )
 
@@ -50,4 +51,13 @@ func TestPublicKey_Verify(t *testing.T) {
 	assert(t, !pub.Verify([]byte("test-messagE"), sig)) // corrupted message
 	sig[0]++
 	assert(t, !pub.Verify([]byte("test-message"), sig)) // corrupted signature
+}
+
+func TestPublicKey_ID64(t *testing.T) {
+	pub := NewPrivateKeyFromSeed("seed").PublicKey()
+	pubHex := fmt.Sprintf("%x", []byte(pub))
+
+	id64 := pub.ID64()
+
+	assert(t, pubHex[:16] == fmt.Sprintf("%016x", id64))
 }
