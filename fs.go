@@ -156,7 +156,7 @@ func (f *fileSystem) GetCommit(ver int64) (commit *Commit, err error) {
 	if root.Header.Ver() <= ver {
 		return
 	}
-	w := newFilesReader()
+	w := newMultiReader()
 	commit = &Commit{Body: w}
 	root.walk(func(nd *fsNode) bool {
 		if h := nd.Header; h.Ver() > ver {

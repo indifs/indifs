@@ -57,7 +57,7 @@ func MakeCommit(ifs IFS, prv crypto.PrivateKey, src fs.FS, ts time.Time) (commit
 		ts = root.Updated().Add(time.Second)
 	}
 
-	files := newFilesReader()
+	files := newMultiReader()
 	commit = &Commit{
 		Headers: []Header{root},
 		Body:    files,

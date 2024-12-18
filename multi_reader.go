@@ -2,22 +2,22 @@ package indifs
 
 import "io"
 
-type filesReader struct {
-	ff []fileOpenFunc
+type multiReader struct {
+	ff []openReaderFunc
 	r  io.ReadCloser
 }
 
-type fileOpenFunc func() (io.ReadCloser, error)
+type openReaderFunc = func() (io.ReadCloser, error)
 
-func newFilesReader() *filesReader {
-	return &filesReader{}
+func newMultiReader() *multiReader {
+	return &multiReader{}
 }
 
-func (f *filesReader) add(fn fileOpenFunc) {
+func (f *multiReader) add(fn openReaderFunc) {
 	f.ff = append(f.ff, fn)
 }
 
-func (f *filesReader) Read(buf []byte) (n int, err error) {
+func (f *multiReader) Read(buf []byte) (n int, err error) {
 	for len(buf) > 0 && len(f.ff) > 0 {
 		if f.r == nil {
 			if f.r, err = f.ff[0](); err != nil {
@@ -41,7 +41,7 @@ func (f *filesReader) Read(buf []byte) (n int, err error) {
 	return
 }
 
-func (f *filesReader) Close() (err error) {
+func (f *multiReader) Close() (err error) {
 	f.ff = nil
 	if f.r != nil {
 		f.r, err = nil, f.r.Close()
