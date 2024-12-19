@@ -20,6 +20,10 @@ func (c *Commit) Root() Header {
 	return c.Headers[0]
 }
 
+func (c *Commit) Author() crypto.PublicKey {
+	return c.Root().PublicKey()
+}
+
 func (c *Commit) Ver() int64 {
 	return c.Root().Ver()
 }
@@ -37,6 +41,15 @@ func (c *Commit) BodySize() (n int64) {
 		n += h.FileSize()
 	}
 	return
+}
+
+func (c *Commit) String() string {
+	buf := bytes.NewBuffer(nil)
+	for _, h := range c.Headers {
+		buf.WriteString(h.String())
+		buf.WriteString("\n")
+	}
+	return buf.String()
 }
 
 func (c *Commit) Trace() {
