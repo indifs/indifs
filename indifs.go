@@ -45,9 +45,6 @@ const (
 	MaxPathNameLength    = 255
 	MaxPathLevels        = 6
 	MaxPathDirFilesCount = 4096
-
-	//MaxPathLength = MaxPathNameLength * MaxPathLevels
-	//pathNameChars = ".-_~@0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 )
 
 var (
@@ -169,39 +166,3 @@ func VersionIsGreater(a, b Header) bool {
 	//}
 	return bytes.Compare(a.Hash(), b.Hash()) > 0
 }
-
-//func protocolVer64(ver string) (num uint64) {
-//
-//	const protocolPrefix = "IndiFS/"
-//	if strings.HasPrefix(ver, protocolPrefix) {
-//		ii:= strings.Split(ver[len(protocolPrefix):]+".",".")
-//		major ,_:=strconv.Atoi(ii[0])
-//		minor ,_:=strconv.Atoi(ii[1])
-//		return uint64(major<<56)|uint64(minor<<32)
-//	}
-//	return 0xffffffffffffffff
-//}
-//
-//func _parseProtocol(ver string) [] int {
-//	sliceMap( strings.Split(ver, ".") {
-//		n,_:=strconv.Atoi(v)
-//		p|=uint64(n)<<(64-(i+1)*16)
-//	}
-//	return
-//}
-//
-//func protocolVerLess(aVer, bVer string) bool {
-//	aa :=  splitProtocolVer(aVer)
-//	bb :=  splitProtocolVer(bVer)
-//
-//
-//	bb := strings.Split(bVer, ".")
-//	for ; len(aa)>0 && len(bb)>0; aa,bb=aa[1:],bb[1:] {
-//		if aa[0]!=bb[0] {
-//			a, _ := strconv.Atoi(aa[0])
-//			b, _ := strconv.Atoi(bb[0])
-//			return a < b
-//		}
-//	}
-//	return len(aa) < len(bb)
-//}
