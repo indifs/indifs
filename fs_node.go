@@ -12,10 +12,6 @@ type fsNode struct {
 }
 
 func indexTree(hh []Header) (tree map[string]*fsNode, err error) {
-
-	//println("============indexTree ")
-	//traceHeaders(hh)
-
 	require(len(hh) > 0 && hh[0].IsRoot(), "indexTree-error")
 	tree = make(map[string]*fsNode, len(hh))
 	tree[""] = &fsNode{Header: hh[0]}
@@ -62,7 +58,7 @@ func (nd *fsNode) isRoot() bool {
 }
 
 func (nd *fsNode) isDir() bool {
-	return strings.HasSuffix(nd.path, "/") || nd.isRoot()
+	return isDir(nd.path)
 }
 
 func (nd *fsNode) hasFile(path string) bool {

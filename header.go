@@ -307,12 +307,11 @@ func (h Header) IsRoot() bool {
 }
 
 func (h Header) IsDir() bool {
-	return !h.IsFile()
+	return isDir(h.Path())
 }
 
 func (h Header) IsFile() bool {
-	path := h.Path()
-	return path != "" && path[len(path)-1] != '/' // !HasSuffix(path, "/")
+	return !h.IsDir()
 }
 
 func (h Header) Deleted() bool {
@@ -405,4 +404,8 @@ func traceHeaders(hh []Header) {
 		println("  - ", h.String())
 	}
 	println("")
+}
+
+func isDir(path string) bool {
+	return path == "" || path[len(path)-1] == '/' // is root or ended with '/'
 }
