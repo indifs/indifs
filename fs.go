@@ -252,8 +252,8 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 		}
 	}
 	//--- merge with existed headers ---
-	var walk func(*fsNode)
-	walk = func(nd *fsNode) {
+	var treeWalk func(nd *fsNode)
+	treeWalk = func(nd *fsNode) {
 		if nd == nil {
 			return
 		}
@@ -261,13 +261,19 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 		if h == nil {
 			hh = append(hh, nd.Header)
 		}
-		if h == nil || !h.Deleted() {
-			for _, c := range nd.children {
-				walk(c)
+		if h == nil || !h.Deleted() { // add existed children to new tree
+
+			// exclude branches if directory version was changed
+			isDirUp := h != nil && nd.isDir() && !nd.isRoot() && h.Ver() > nd.Header.Ver()
+
+			for _, ch := range nd.children {
+				if !isDirUp || updated[ch.path] != nil {
+					treeWalk(ch)
+				}
 			}
 		}
 	}
-	walk(curTree[""])
+	treeWalk(curTree[""])
 
 	//--- update tree
 	sortHeaders(hh)
