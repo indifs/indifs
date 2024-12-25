@@ -321,35 +321,6 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 				require(w.Written() == hSize, "invalid commit-content")
 				require(bytes.Equal(w.Root(), h.MerkleHash()), "invalid commit-header Merkle")
 				delete(delFiles, h.Path())
-
-				//-------- v0
-				//cont := make([]byte, int(hSize))
-				//n, err := io.ReadFull(commit.Body, cont)
-				//must(err)
-				//require(int64(n) == hSize, "invalid commit-content")
-				//
-				//merkle, _, _ := crypto.ReadMerkleRoot(bytes.NewBuffer(cont), hSize, partSize)
-				////require(hSize == sz, "invalid commit-header Size")
-				//require(bytes.Equal(h.MerkleHash(), merkle), "invalid commit-header Merkle")
-				//
-				//err = tx.Put(h.Path(), bytes.NewBuffer(cont))
-				//must(err)
-				//delete(delFiles, h.Path())
-
-				//-----------
-				// TODO: r := crypto.NewMerkleReader(commit.Body, hSize, h.PartSize())
-				// tx.Put(key, r) // put reader
-				// require(bytes.Equal(h.Merkle(), r.MerkleRoot()))
-				// require(r.ReadSize() == size, "invalid commit-header Size")
-
-				// todo: put content by hash (put if not exists, delete on error)
-				//key:=fmt.Sprintf("X%x", merkle[:16])
-				//exst, err:= f.db.Exists(key)
-				//must(err)
-				//if !exst {
-				//	err = f.db.Put(key, bytes.NewBuffer(cont))
-				//	must(err)
-				//}
 			}
 		}
 
