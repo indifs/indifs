@@ -288,9 +288,9 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 	require(bytes.Equal(newMerkle, c.MerkleHash()), "invalid commit-header Merkle-Root")
 
 	rootPartSize := c.PartSize()
-	//if rootPartSize == 0 {
-	//	rootPartSize = DefaultFilePartSize
-	//}
+	if rootPartSize == 0 {
+		rootPartSize = DefaultFilePartSize
+	}
 
 	//--- verify dir`s Merkle-header
 	newRoot.walk(func(nd *fsNode) bool {
