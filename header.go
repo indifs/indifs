@@ -37,11 +37,10 @@ var errInvalidJSON = errors.New("invalid JSON")
 // predefined header-field-names
 const (
 	// root header fields
-	headerProtocol   = "Protocol"   //
-	headerPublicKey  = "Public-Key" //
-	headerSignature  = "Signature"  //
-	headerTreeVolume = "Volume"     // volume of full file tree
-	//headerTreeMerkle = "Merkle-Root" // root merkle of full file tree
+	headerProtocol  = "Protocol"   //
+	headerPublicKey = "Public-Key" //
+	headerSignature = "Signature"  //
+	headerVolume    = "Volume"     // volume of full file tree
 
 	// general
 	headerVer        = "Ver"     // file or dir-version
@@ -87,7 +86,9 @@ func (h Header) MarshalJSON() ([]byte, error) {
 		if i > 0 {
 			buf.WriteByte(',')
 		}
-		buf.Write(jsonMarshalKey(v.Name))
+		buf.WriteByte('"')
+		buf.WriteString(v.Name) // key (does not contain special characters)
+		buf.WriteByte('"')
 		buf.WriteByte(':')
 		jsonMarshalValue(buf, v.Value)
 	}
@@ -133,17 +134,6 @@ func (h Header) MarshalText() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func jsonMarshalKey(v string) []byte {
-	// todo: optimize it; use fast string marshaling
-	b, _ := json.Marshal(v)
-	return b
-}
-
-var (
-	txtValChars = []byte(headerTextValueCharset)
-	binValPfx   = []byte(headerBinaryValuePrefix)
-)
-
 func jsonMarshalValue(buf *bytes.Buffer, v []byte) {
 	buf.WriteByte('"')
 	textMarshalValue(buf, v)
@@ -151,10 +141,10 @@ func jsonMarshalValue(buf *bytes.Buffer, v []byte) {
 }
 
 func textMarshalValue(buf *bytes.Buffer, v []byte) {
-	if bContainOnly(v, txtValChars) && !bytes.HasPrefix(v, binValPfx) {
+	if containsOnly(v, headerTextValueCharset) && !bytes.HasPrefix(v, []byte(headerBinaryValuePrefix)) {
 		buf.Write(v)
 	} else {
-		buf.Write(binValPfx)
+		buf.WriteString(headerBinaryValuePrefix)
 		buf.WriteString(base64.RawStdEncoding.EncodeToString(v))
 	}
 }
@@ -390,7 +380,7 @@ func ValidateHeader(h Header) error {
 func isValidHeaderField(v HeaderField) bool {
 	return len(v.Name) <= MaxHeaderNameLength &&
 		len(v.Value) <= MaxHeaderValueLength &&
-		containsOnly(v.Name, headerNameCharset)
+		containsOnly([]byte(v.Name), headerNameCharset)
 }
 
 func sortHeaders(hh []Header) {

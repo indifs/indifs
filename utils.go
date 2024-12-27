@@ -1,7 +1,6 @@
 package indifs
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -62,10 +61,10 @@ func joinErrors(a, b error) error {
 	return errors.Join(a, b)
 }
 
-func containsOnly(s, chars string) bool {
+func containsOnly(s []byte, chars string) bool {
 	// todo: optimize, use charset-table as array  (see net/textproto/reader.go isTokenTable)
 	for _, c := range s {
-		if strings.IndexRune(chars, c) == -1 {
+		if !strings.ContainsRune(chars, rune(c)) {
 			return false
 		}
 	}
@@ -79,15 +78,6 @@ func sliceFilter[S ~[]E, E any](vv S, fn func(E) bool) (res S) {
 		}
 	}
 	return
-}
-
-func bContainOnly(s, chars []byte) bool {
-	for _, c := range s {
-		if bytes.IndexByte(chars, c) == -1 {
-			return false
-		}
-	}
-	return true
 }
 
 func toJSON(v any) string {
