@@ -250,16 +250,13 @@ func (h Header) Hash() []byte {
 		n--
 	}
 	hsh := crypto.NewHash()
-	buf := make([]byte, 4)
 	for _, kv := range h[:n-1] {
 		// write <len><Name>
-		binary.BigEndian.PutUint32(buf, uint32(len(kv.Name)))
-		hsh.Write(buf)
+		binary.Write(hsh, binary.BigEndian, uint32(len(kv.Name)))
 		hsh.Write([]byte(kv.Name))
 
 		// write <len><Value>
-		binary.BigEndian.PutUint32(buf, uint32(len(kv.Value)))
-		hsh.Write(buf)
+		binary.Write(hsh, binary.BigEndian, uint32(len(kv.Value)))
 		hsh.Write(kv.Value)
 	}
 	return hsh.Sum(nil)
@@ -308,7 +305,7 @@ func (h Header) Deleted() bool {
 	return h.Has(headerDeleted)
 }
 
-// Ver returns last file or dir-version. batch-version
+// Ver returns last file, dir or commit-version
 func (h Header) Ver() int64 {
 	return h.GetInt(headerVer)
 }
