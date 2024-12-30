@@ -35,10 +35,6 @@ func (f *fileSystem) rootNode() *fsNode {
 	return f.nodes[""]
 }
 
-func (f *fileSystem) setPartSize(size int64) {
-	f.rootNode().Header.SetInt(headerFilePartSize, size)
-}
-
 func (f *fileSystem) headers() (hh []Header) {
 	hh = make([]Header, 0, len(f.nodes))
 	for _, nd := range f.nodes {
@@ -287,10 +283,8 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 	newMerkle := newRoot.childrenMerkleRoot()
 	require(bytes.Equal(newMerkle, c.MerkleHash()), "invalid commit-header Merkle-Root")
 
-	rootPartSize := c.PartSize()
-	if rootPartSize == 0 {
-		rootPartSize = DefaultFilePartSize
-	}
+	rootPartSize := c.PartSize() // (Part-Size can be zero)
+	//rootPartSize := cmp.Or(c.PartSize(), DefaultFilePartSize)
 
 	//--- verify dir`s Merkle-header
 	newRoot.walk(func(nd *fsNode) bool {
@@ -309,11 +303,11 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 				continue
 			}
 			if hSize, hMerkle := h.FileSize(), h.MerkleHash(); hSize > 0 || len(hMerkle) != 0 {
-				partSize := h.PartSize()
-				if partSize == 0 {
-					partSize = rootPartSize
+				partSize := rootPartSize
+				if h.Has(headerFilePartSize) {
+					partSize = h.PartSize()
 				}
-				require(partSize > 0, "empty commit-header Part-Size")
+				// require(partSize > 0, "empty commit-header Part-Size")
 
 				r := io.LimitReader(commit.Body, hSize)
 				w := crypto.NewMerkleHash(partSize)
