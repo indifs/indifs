@@ -58,6 +58,27 @@ const testHeadersJSON = `[{
 	"Merkle":"b64,tdQEXD9Gb6kf4sxqvnkjKhpXzfEE96JucW4KHieJ33g"
 }]`
 
+func TestHeader_IsRoot(t *testing.T) {
+	assert(t, testHeaders[0].IsRoot())
+	assert(t, !testHeaders[1].IsRoot())
+	assert(t, !testHeaders[2].IsRoot())
+	assert(t, !testHeaders[3].IsRoot())
+}
+
+func TestHeader_IsDir(t *testing.T) {
+	assert(t, testHeaders[0].IsDir())
+	assert(t, testHeaders[1].IsDir())
+	assert(t, testHeaders[2].IsDir())
+	assert(t, !testHeaders[3].IsDir())
+}
+
+func TestHeader_IsFile(t *testing.T) {
+	assert(t, !testHeaders[0].IsFile())
+	assert(t, !testHeaders[1].IsFile())
+	assert(t, !testHeaders[2].IsFile())
+	assert(t, testHeaders[3].IsFile())
+}
+
 func TestValidateHeader(t *testing.T) {
 	for _, h := range testHeaders {
 		err := ValidateHeader(h)
@@ -107,4 +128,5 @@ func TestHeader_Hash(t *testing.T) {
 
 func TestHeader_Verify(t *testing.T) {
 	assert(t, testHeaders[0].Verify())
+	assert(t, !testHeaders[1].Verify())
 }
