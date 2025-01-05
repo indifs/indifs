@@ -184,21 +184,21 @@ func TestFileSystem_GetCommit(t *testing.T) {
 
 }
 
-func TestFileSystem_FileMerkleWitness(t *testing.T) {
+func TestFileSystem_FileMerkleProof(t *testing.T) {
 	s := applyCommit(newTestIFS(), "commit1")
 	hh := fsHeaders(s)
 	merkleRoot := hh[0].MerkleHash()
 
 	for _, h := range hh[1:] {
-		// make merkle witness for each file
-		fileHash, fileWitness, err := s.FileMerkleWitness(h.Path())
+		// make merkle proof for each file
+		fileHash, fileProof, err := s.FileMerkleProof(h.Path())
 		assert(t, err == nil)
 		assert(t, bytes.Equal(fileHash, h.Hash()))
-		assert(t, len(fileWitness) > 0 && len(fileWitness)%33 == 0)
+		assert(t, len(fileProof) > 0 && len(fileProof)%33 == 0)
 		assert(t, len(fileHash) == 32)
 
-		// verify merkle-witness
-		ok := crypto.VerifyMerkleWitness(fileHash, merkleRoot, fileWitness)
+		// verify merkle-proof
+		ok := crypto.VerifyMerkleProof(fileHash, merkleRoot, fileProof)
 		assert(t, ok)
 
 		if h.IsFile() {
