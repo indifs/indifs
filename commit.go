@@ -171,7 +171,7 @@ func MakeCommit(ifs IFS, prv crypto.PrivateKey, src fs.FS, ts time.Time) (commit
 	}
 	newRoot.SetTime(headerUpdated, ts)
 	newRoot.SetInt(headerVer, ver)
-	newRoot.SetInt(headerTreeVolume, ndRoot.totalVolume())
+	newRoot.SetInt(headerVolume, ndRoot.totalVolume())
 	newRoot.SetBytes(headerMerkleHash, ndRoot.childrenMerkleRoot())
 	newRoot.Sign(prv)
 	return

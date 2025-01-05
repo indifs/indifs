@@ -228,7 +228,7 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 		case h.IsRoot():
 			require(hasMerkle, "invalid commit-header")
 			require(!h.Deleted(), "invalid commit-header")
-			require(h.Has(headerTreeVolume), "invalid commit-header")
+			require(h.Has(headerVolume), "invalid commit-header")
 
 		case h.IsFile():
 			isZeroLenFile := h.FileSize() == 0 // or is deleted
@@ -278,7 +278,7 @@ func (f *fileSystem) Commit(commit *Commit) (err error) {
 	//--- verify new root merkle and total-volume (Merkle-Root and Volume headers)
 	newRoot := newTree[""]
 	newTotalVolume := newRoot.totalVolume()
-	require(newTotalVolume == c.GetInt(headerTreeVolume), "invalid commit-header Volume")
+	require(newTotalVolume == c.GetInt(headerVolume), "invalid commit-header Volume")
 
 	newMerkle := newRoot.childrenMerkleRoot()
 	require(bytes.Equal(newMerkle, c.MerkleHash()), "invalid commit-header Merkle-Root")
