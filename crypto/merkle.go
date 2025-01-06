@@ -6,11 +6,13 @@ import (
 	"math"
 )
 
+// OpLHash and OpRHash are the operations for the merkle-proof.
 const (
 	OpLHash = 0
 	OpRHash = 1
 )
 
+// MerkleHash is an interface for computing the merkle-root of a stream of data.
 type MerkleHash interface {
 	Write([]byte) (n int, err error)
 	Root() []byte
@@ -26,6 +28,7 @@ type merkleHash struct {
 	parts    [][]byte
 }
 
+// NewMerkleHash creates a new MerkleHash with the specified part size.
 func NewMerkleHash(partSize int64) MerkleHash {
 	if partSize <= 0 {
 		partSize = math.MaxInt64
@@ -36,6 +39,7 @@ func NewMerkleHash(partSize int64) MerkleHash {
 	}
 }
 
+// Write writes data to the merkle-hash.
 func (h *merkleHash) Write(data []byte) (n int, err error) {
 	n = len(data)
 	h.n += int64(n)
@@ -52,14 +56,17 @@ func (h *merkleHash) Write(data []byte) (n int, err error) {
 	return
 }
 
+// Root returns the merkle-root of the written data.
 func (h *merkleHash) Root() []byte {
 	return MerkleRoot(h.Leaves()...)
 }
 
+// Written returns the total number of bytes written.
 func (h *merkleHash) Written() int64 {
 	return h.n
 }
 
+// Leaves returns the leaves of the merkle-tree.
 func (h *merkleHash) Leaves() [][]byte {
 	if h.nHash > 0 {
 		h.parts, h.nHash = append(h.parts, h.hash.Sum(nil)), 0
@@ -68,12 +75,14 @@ func (h *merkleHash) Leaves() [][]byte {
 	return h.parts
 }
 
+// MerkleRoot computes the merkle-root from the given hashes.
 func MerkleRoot(hash ...[]byte) []byte {
 	return MakeMerkleRoot(len(hash), func(i int) []byte {
 		return hash[i]
 	})
 }
 
+// MakeMerkleRoot computes the merkle-root from the given number of items and their hashes.
 func MakeMerkleRoot(n int, itemHash func(int) []byte) []byte {
 	return merkleRootFn(0, n, itemHash)
 }
@@ -91,10 +100,11 @@ func merkleRootFn(offset, n int, itemHash func(int) []byte) []byte {
 	)
 }
 
+// MakeMerkleProof creates a merkle-proof for the given index in the list of hashes.
 func MakeMerkleProof(hashes [][]byte, i int) []byte {
 	n := len(hashes)
 	if i < 0 || i >= n {
-		panic("invalid tree")
+		panic("MakeMerkleProof-error: invalid tree index")
 	}
 	if n == 1 {
 		return hashes[0]
@@ -114,6 +124,7 @@ func MakeMerkleProof(hashes [][]byte, i int) []byte {
 	}
 }
 
+// MerkleProofAppend appends a hash and operation to the merkle-proof.
 func MerkleProofAppend(proof []byte, op byte, hash []byte) []byte {
 	return append(append(proof, op), hash...)
 }
@@ -124,6 +135,7 @@ func merkleMiddle(n int) (i int) {
 	return i >> 1
 }
 
+// VerifyMerkleProof verifies the merkle-proof for the given hash and root.
 func VerifyMerkleProof(hash, root, proof []byte) bool {
 	const opSize = HashSize + 1
 	for n := len(proof); n > 0; n -= opSize {
