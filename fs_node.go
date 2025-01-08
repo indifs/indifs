@@ -74,13 +74,11 @@ func (nd *fsNode) merkleRoot() []byte {
 
 func (nd *fsNode) merkleProof(path string) []byte {
 	if nd.path == path {
-		if len(nd.children) == 0 { // is file or empty dir
-			return nd.Header.Hash()
-		}
-		return crypto.MakeMerkleProof([][]byte{ // is dir
-			nd.Header.Hash(),
+		return crypto.MerkleProofAppend(
+			nil,
+			crypto.OpRHash,
 			nd.childrenMerkleRoot(),
-		}, 0)
+		)
 	}
 	return crypto.MerkleProofAppend(
 		nd.childrenMerkleProof(path),
@@ -116,5 +114,5 @@ func (nd *fsNode) childrenMerkleProof(path string) []byte {
 			hashes = append(hashes, sub.merkleRoot())
 		}
 	}
-	return crypto.MakeMerkleProof(hashes, iHash)
+	return append(hashes[iHash], crypto.MakeMerkleProof(hashes, iHash)...)
 }

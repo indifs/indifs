@@ -107,7 +107,7 @@ func MakeMerkleProof(hashes [][]byte, i int) []byte {
 		panic("MakeMerkleProof-error: invalid tree index")
 	}
 	if n == 1 {
-		return hashes[0]
+		return nil
 	}
 	if i2 := merkleMiddle(n); i < i2 { // arg=HASH(arg|op)
 		return MerkleProofAppend(
@@ -126,6 +126,9 @@ func MakeMerkleProof(hashes [][]byte, i int) []byte {
 
 // MerkleProofAppend appends a hash and operation to the merkle-proof.
 func MerkleProofAppend(proof []byte, op byte, hash []byte) []byte {
+	if len(hash) == 0 {
+		return proof
+	}
 	return append(append(proof, op), hash...)
 }
 

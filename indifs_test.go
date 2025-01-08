@@ -191,10 +191,10 @@ func TestFileSystem_FileMerkleProof(t *testing.T) {
 
 	for _, h := range hh[1:] {
 		// make merkle proof for each file
-		fileHash, fileProof, err := s.FileMerkleProof(h.Path())
+		fileHash := h.Hash()
+		fileProof, err := s.FileMerkleProof(h.Path())
 		assert(t, err == nil)
-		assert(t, bytes.Equal(fileHash, h.Hash()))
-		assert(t, len(fileProof) > 0 && len(fileProof)%33 == 0)
+		assert(t, len(fileProof)%33 == 0)
 		assert(t, len(fileHash) == 32)
 
 		// verify merkle-proof
