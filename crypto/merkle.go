@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"hash"
 	"math"
+	"math/bits"
 )
 
 // OpLHash and OpRHash are the operations for the merkle-proof.
@@ -132,10 +133,11 @@ func MerkleProofAppend(proof []byte, op byte, hash []byte) []byte {
 	return append(append(proof, op), hash...)
 }
 
-func merkleMiddle(n int) (i int) {
-	for i = 1; i < n; i <<= 1 {
+func merkleMiddle(n int) int {
+	if n <= 1 {
+		return 0
 	}
-	return i >> 1
+	return 1 << (bits.Len(uint(n-1)) - 1)
 }
 
 // VerifyMerkleProof verifies the merkle-proof for the given hash and root.
