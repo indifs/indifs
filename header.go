@@ -14,11 +14,13 @@ import (
 	"time"
 )
 
+// Header represents a collection of header fields.
 type Header []HeaderField
 
+// HeaderField represents a single header field with a name and value.
 type HeaderField struct {
-	Name  string //
-	Value []byte //
+	Name  string // Name of the header field
+	Value []byte // Value of the header field
 }
 
 const (
@@ -360,7 +362,10 @@ func (h Header) Verify() bool {
 		h.PublicKey().Verify(h[:n-1].Hash(), h[n-1].Value)
 }
 
-//--------------------------------------------------------
+// VerifyMerkleProof verifies the merkle-proof of the header.
+func (h Header) VerifyMerkleProof(merkleRoot, proof []byte) bool {
+	return crypto.VerifyMerkleProof(h.Hash(), merkleRoot, proof)
+}
 
 func ValidateHeader(h Header) error {
 	for _, v := range h {
