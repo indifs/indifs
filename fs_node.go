@@ -74,13 +74,13 @@ func (nd *fsNode) merkleRoot() []byte {
 
 func (nd *fsNode) merkleProof(path string) []byte {
 	if nd.path == path {
-		return crypto.MerkleProofAppend(
+		return crypto.AppendMerkleProof(
 			nil,
 			crypto.OpRHash,
 			nd.childrenMerkleRoot(),
 		)
 	}
-	return crypto.MerkleProofAppend(
+	return crypto.AppendMerkleProof(
 		nd.childrenMerkleProof(path),
 		crypto.OpLHash,
 		nd.Header.Hash(),
