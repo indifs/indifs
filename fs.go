@@ -86,15 +86,17 @@ func (f *fileSystem) FileHeader(path string) (Header, error) {
 	return nil, ErrNotFound
 }
 
-func (f *fileSystem) FileMerkleProof(path string) (proof []byte, err error) {
+func (f *fileSystem) FileMerkleProof(path string) ([]byte, error) {
 	f.mx.RLock()
 	defer f.mx.RUnlock()
 
+	if path == "" {
+		return nil, nil
+	}
 	if f.nodes[path] == nil {
 		return nil, ErrNotFound
 	}
-	proof = f.rootNode().childrenMerkleProof(path)
-	return
+	return f.rootNode().childrenMerkleProof(path), nil
 }
 
 func (f *fileSystem) rootPartSize() int64 {
