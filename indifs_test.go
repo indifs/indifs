@@ -185,20 +185,16 @@ func TestFileSystem_GetCommit(t *testing.T) {
 }
 
 func TestFileSystem_FileMerkleProof(t *testing.T) {
-	s := applyCommit(newTestIFS(), "commit1")
-	hh := fsHeaders(s)
-	merkleRoot := hh[0].MerkleHash()
+	s := applyCommit(newTestIFS(), "commit1", "commit2")
+	merkleRoot := s.Root().MerkleHash()
 
-	for _, h := range hh[1:] {
-		// make merkle proof for each file
-		fileHash := h.Hash()
-		fileProof, err := s.FileMerkleProof(h.Path())
+	// make merkle proof for each file
+	for _, h := range fsHeaders(s)[1:] {
+		merkleProof, err := s.FileMerkleProof(h.Path())
 		assert(t, err == nil)
-		assert(t, len(fileProof)%33 == 0)
-		assert(t, len(fileHash) == 32)
+		assert(t, len(merkleProof)%33 == 0)
 
-		// verify merkle-proof
-		ok := crypto.VerifyMerkleProof(fileHash, merkleRoot, fileProof)
+		ok := h.VerifyMerkleProof(merkleRoot, merkleProof)
 		assert(t, ok)
 
 		if h.IsFile() {
@@ -222,20 +218,6 @@ func makeTestCommit(vfs IFS, commitID string) *Commit {
 func fsHeaders(f IFS) (hh []Header) {
 	return f.(*fileSystem).headers()
 }
-
-//func initIFS(d database.Storage, pub crypto.PublicKey) IFS {
-//must(d.Execute("fs-"+fmt.Sprintf("%x", pub[:16]), func(tx database.Transaction) error { // init DB
-//	h0 := NewRootHeader(pub)
-//	h0.SetTime("Created", t0)
-//	h0.SetTime("Updated", t0)
-//	h0.SetInt(headerFilePartSize, 1024)
-//	//h1 := NewHeader("/")
-//	//h1.AddInt(headerVer, h0.Ver())
-//	//return database.PutJSON(tx, dbKeyHeaders, []Header{h0, h1})
-//	return database.PutJSON(tx, dbKeyHeaders, []Header{h0})
-//}))
-//	return mustVal(OpenFS(pub, d))
-//}
 
 func applyCommit(f IFS, commitName ...string) IFS {
 	for _, name := range commitName {
