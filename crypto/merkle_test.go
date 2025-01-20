@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"encoding/hex"
+	"fmt"
 	"io"
 	"math/rand"
 	"testing"
@@ -44,4 +45,26 @@ func TestNewHash(t *testing.T) {
 	assert(t, n == 20e6)
 	assert(t, err == nil)
 	assert(t, hex.EncodeToString(hash.Sum(nil)) == "9c9f54aca340d76dd36acd53069805bed7aca84f28b1a6bc2c7d27f7f06fac20")
+}
+
+func TestMakeMerkleProof(t *testing.T) {
+
+	const N = 1000
+
+	hashes := newTestHashes(N)
+	root := MerkleRoot(hashes...)
+
+	for i := 0; i < N; i++ {
+		hash, proof := hashes[i], MakeMerkleProof(hashes, i)
+
+		assert(t, VerifyMerkleProof(hash, root, proof))
+	}
+}
+
+func newTestHashes(n int) [][]byte {
+	hashes := make([][]byte, n)
+	for i := range hashes {
+		hashes[i] = Hash([]byte(fmt.Sprint(i)))
+	}
+	return hashes
 }
