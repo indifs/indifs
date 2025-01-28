@@ -49,15 +49,15 @@ func TestNewHash(t *testing.T) {
 
 func TestMakeMerkleProof(t *testing.T) {
 
-	const N = 1000
-
-	hashes := newTestHashes(N)
+	hashes := newTestHashes(1000)
 	root := MerkleRoot(hashes...)
 
-	for i := 0; i < N; i++ {
-		hash, proof := hashes[i], MakeMerkleProof(hashes, i)
+	for i, hash := range hashes {
 
-		assert(t, VerifyMerkleProof(hash, root, proof))
+		proof := MakeMerkleProof(hashes, i)
+
+		ok := VerifyMerkleProof(hash, root, proof)
+		assert(t, ok)
 	}
 }
 
