@@ -45,23 +45,25 @@ const (
 	headerVolume    = "Volume"     // volume of full file tree
 
 	// general
-	headerVer        = "Ver"     // file or dir-version
-	headerPath       = "Path"    // file or dir-path
-	headerCreated    = "Created" //
-	headerUpdated    = "Updated" //
-	headerDeleted    = "Deleted" //
-	headerMerkleHash = "Merkle"  // content hash := MerkleRoot(fileParts...) | MerkleRoot(dirHeaders...)
+	headerVer        = "Ver"     // File or directory version
+	headerPath       = "Path"    // File or directory path
+	headerCreated    = "Created" // Creation time
+	headerUpdated    = "Updated" // Update time
+	headerDeleted    = "Deleted" // Deleted flag
+	headerMerkleHash = "Merkle"  // Content hash (Merkle root)
 
 	// files
-	headerFileSize     = "Size"      // file size
-	headerFilePartSize = "Part-Size" // file part size
+	headerFileSize     = "Size"      // File size
+	headerFilePartSize = "Part-Size" // File part size
 )
 
+// NewHeader creates a new header with the given path.
 func NewHeader(path string) (h Header) {
 	h.SetPath(path)
 	return
 }
 
+// NewRootHeader creates a new root header with the given public key.
 func NewRootHeader(pub crypto.PublicKey) (h Header) {
 	h.Add(headerProtocol, DefaultProtocol)
 	h.AddInt(headerVer, 0)
