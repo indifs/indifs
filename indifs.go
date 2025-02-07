@@ -18,7 +18,7 @@ type IFS interface {
 	FileHeader(path string) (Header, error)
 
 	// FileMerkleProof returns merkle-proof for file or dir-header
-	FileMerkleProof(path string) (proof []byte, err error)
+	FileMerkleProof(path string) ([]byte, error)
 
 	// FileParts returns hashes of file-parts
 	FileParts(path string) (hashes [][]byte, err error)
