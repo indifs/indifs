@@ -72,18 +72,20 @@ func NewRootHeader(pub crypto.PublicKey) (h Header) {
 	return
 }
 
+// Copy returns a copy of the header.
 func (h Header) Copy() Header {
 	h1 := make(Header, len(h))
 	copy(h1, h)
 	return h1
 }
 
+// String returns the header as a JSON string.
 func (h Header) String() string {
 	s, _ := h.MarshalJSON()
 	return string(s)
 }
 
-// MarshalJSON implements json.Marshaler
+// MarshalJSON implements json.Marshaler.
 func (h Header) MarshalJSON() ([]byte, error) {
 	buf := bytes.NewBufferString("{")
 	for i, v := range h {
@@ -100,6 +102,7 @@ func (h Header) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// UnmarshalJSON implements json.Unmarshaler.
 func (h *Header) UnmarshalJSON(data []byte) (err error) {
 	n := len(data)
 	if n < 2 || data[0] != '{' || data[n-1] != '}' {
@@ -127,6 +130,7 @@ func (h *Header) UnmarshalJSON(data []byte) (err error) {
 	return
 }
 
+// MarshalText implements encoding.TextMarshaler.
 func (h Header) MarshalText() ([]byte, error) {
 	buf := bytes.NewBufferString(``)
 	for _, v := range h {
@@ -138,12 +142,14 @@ func (h Header) MarshalText() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// jsonMarshalValue writes a JSON value to the buffer.
 func jsonMarshalValue(buf *bytes.Buffer, v []byte) {
 	buf.WriteByte('"')
 	textMarshalValue(buf, v)
 	buf.WriteByte('"')
 }
 
+// textMarshalValue writes a text value to the buffer.
 func textMarshalValue(buf *bytes.Buffer, v []byte) {
 	if containsOnly(v, headerTextValueCharset) && !bytes.HasPrefix(v, []byte(headerBinaryValuePrefix)) {
 		buf.Write(v)
@@ -153,6 +159,7 @@ func textMarshalValue(buf *bytes.Buffer, v []byte) {
 	}
 }
 
+// jsonUnmarshalValue unmarshals a header value.
 func jsonUnmarshalValue(v string) ([]byte, error) {
 	if strings.HasPrefix(v, headerBinaryValuePrefix) {
 		return base64.RawStdEncoding.DecodeString(strings.TrimPrefix(v, headerBinaryValuePrefix))
@@ -160,7 +167,7 @@ func jsonUnmarshalValue(v string) ([]byte, error) {
 	return []byte(v), nil
 }
 
-// -------------------------------------------
+// indexOf returns the index of the header field with the given key.
 func (h Header) indexOf(key string) int {
 	for i := len(h) - 1; i >= 0; i-- {
 		if h[i].Name == key {
@@ -170,6 +177,7 @@ func (h Header) indexOf(key string) int {
 	return -1
 }
 
+// Has checks if the header contains the given key.
 func (h Header) Has(key string) bool {
 	return h.indexOf(key) >= 0
 }
