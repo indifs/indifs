@@ -182,10 +182,12 @@ func (h Header) Has(key string) bool {
 	return h.indexOf(key) >= 0
 }
 
+// Get returns the value of the header field with the given key as a string.
 func (h Header) Get(key string) string {
 	return string(h.GetBytes(key))
 }
 
+// GetBytes returns the value of the header field with the given key as a byte slice.
 func (h Header) GetBytes(key string) []byte {
 	if i := h.indexOf(key); i >= 0 {
 		return h[i].Value
@@ -193,16 +195,19 @@ func (h Header) GetBytes(key string) []byte {
 	return nil
 }
 
+// GetInt returns the value of the header field with the given key as an int64.
 func (h Header) GetInt(key string) int64 {
 	i, _ := strconv.ParseInt(h.Get(key), 10, 64)
 	return i
 }
 
+// GetNum returns the value of the header field with the given key as a float64.
 func (h Header) GetNum(key string) float64 {
 	f, _ := strconv.ParseFloat(h.Get(key), 64)
 	return f
 }
 
+// GetTime returns the value of the header field with the given key as a time.Time.
 func (h Header) GetTime(key string) time.Time {
 	t, _ := time.Parse(time.RFC3339, h.Get(key))
 	return t
