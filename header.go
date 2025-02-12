@@ -213,10 +213,12 @@ func (h Header) GetTime(key string) time.Time {
 	return t
 }
 
+// Set sets the value of the header field with the given key to the given string value.
 func (h *Header) Set(key, value string) {
 	h.SetBytes(key, []byte(value))
 }
 
+// SetBytes sets the value of the header field with the given key to the given byte slice.
 func (h *Header) SetBytes(key string, value []byte) {
 	if i := h.indexOf(key); i >= 0 {
 		(*h)[i].Value = value
@@ -225,30 +227,37 @@ func (h *Header) SetBytes(key string, value []byte) {
 	}
 }
 
+// SetInt sets the value of the header field with the given key to the given int64 value.
 func (h *Header) SetInt(key string, value int64) {
 	h.Set(key, strconv.FormatInt(value, 10))
 }
 
+// SetTime sets the value of the header field with the given key to the given time.Time value.
 func (h *Header) SetTime(key string, value time.Time) {
 	h.Set(key, value.Format(time.RFC3339))
 }
 
+// Add adds a new header field with the given key and string value.
 func (h *Header) Add(key, value string) {
 	h.AddBytes(key, []byte(value))
 }
 
+// AddBytes adds a new header field with the given key and byte slice value.
 func (h *Header) AddBytes(key string, value []byte) {
 	*h = append(*h, HeaderField{key, value})
 }
 
+// AddInt adds a new header field with the given key and int64 value.
 func (h *Header) AddInt(key string, value int64) {
 	h.Add(key, strconv.FormatInt(value, 10))
 }
 
+// AddNum adds a new header field with the given key and float64 value.
 func (h *Header) AddNum(key string, value float64) {
 	h.Add(key, fmt.Sprint(value))
 }
 
+// AddTime adds a new header field with the given key and time.Time value.
 func (h *Header) AddTime(key string, value time.Time) {
 	h.Add(key, value.Format(time.RFC3339))
 }
