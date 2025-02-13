@@ -262,6 +262,7 @@ func (h *Header) AddTime(key string, value time.Time) {
 	h.Add(key, value.Format(time.RFC3339))
 }
 
+// Delete removes all header fields with the given key.
 func (h *Header) Delete(key string) {
 	for i := h.indexOf(key); i >= 0; i = h.indexOf(key) {
 		c := *h
@@ -270,6 +271,7 @@ func (h *Header) Delete(key string) {
 	}
 }
 
+// Hash returns the hash of the header.
 func (h Header) Hash() []byte {
 	n := len(h)
 	if n > 0 && h[n-1].Name == headerSignature { // exclude last header "Signature"
@@ -288,6 +290,7 @@ func (h Header) Hash() []byte {
 	return hsh.Sum(nil)
 }
 
+// Length returns the total length of all header fields.
 func (h Header) Length() (n int) {
 	for _, kv := range h {
 		n += len(kv.Name) + len(kv.Value)
@@ -303,10 +306,12 @@ func (h Header) totalVolume() int64 {
 //        pre-defined params
 //--------------------------------------
 
+// Path returns the path of the header.
 func (h Header) Path() string {
 	return h.Get(headerPath)
 }
 
+// SetPath sets the path of the header.
 func (h *Header) SetPath(path string) {
 	if path == "" {
 		h.Delete(headerPath)
