@@ -345,18 +345,22 @@ func (h Header) Ver() int64 {
 	return h.GetInt(headerVer)
 }
 
+// PartSize returns the part size of the storage file in bytes.
 func (h Header) PartSize() int64 {
 	return h.GetInt(headerFilePartSize)
 }
 
+// Updated returns the update time of the storage node.
 func (h Header) Updated() time.Time {
 	return h.GetTime(headerUpdated)
 }
 
+// Created returns the creation time of the storage node.
 func (h Header) Created() time.Time {
 	return h.GetTime(headerCreated)
 }
 
+// FileSize returns the file size of the storage file in bytes.
 func (h Header) FileSize() int64 {
 	return h.GetInt(headerFileSize)
 }
