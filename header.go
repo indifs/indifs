@@ -320,18 +320,22 @@ func (h *Header) SetPath(path string) {
 	}
 }
 
+// IsRoot checks if the header is the root header.
 func (h Header) IsRoot() bool {
 	return !h.Has(headerPath)
 }
 
+// IsDir checks if the header represents a directory.
 func (h Header) IsDir() bool {
 	return isDir(h.Path())
 }
 
+// IsFile checks if the header represents a file.
 func (h Header) IsFile() bool {
 	return !h.IsDir()
 }
 
+// Deleted checks if the header is marked as deleted.
 func (h Header) Deleted() bool {
 	return h.Has(headerDeleted)
 }
