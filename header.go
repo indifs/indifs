@@ -365,21 +365,24 @@ func (h Header) FileSize() int64 {
 	return h.GetInt(headerFileSize)
 }
 
+// MerkleHash returns the Merkle hash of the header.
 func (h Header) MerkleHash() []byte {
 	return h.GetBytes(headerMerkleHash)
 }
 
 //--------- root-header crypto methods ----------
 
-// Protocol returns IFS-Protocol
+// Protocol returns the protocol version of the storage.
 func (h Header) Protocol() string {
 	return h.Get(headerProtocol)
 }
 
+// PublicKey returns the public key of the storage.
 func (h Header) PublicKey() crypto.PublicKey {
 	return crypto.DecodePublicKey(h.Get(headerPublicKey))
 }
 
+// SetPublicKey sets the public key of the storage.
 func (h *Header) SetPublicKey(pub crypto.PublicKey) {
 	//h.Delete(HeaderPublicKey)
 	h.Set(headerPublicKey, pub.Encode())
