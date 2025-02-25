@@ -384,10 +384,10 @@ func (h Header) PublicKey() crypto.PublicKey {
 
 // SetPublicKey sets the public key of the storage.
 func (h *Header) SetPublicKey(pub crypto.PublicKey) {
-	//h.Delete(HeaderPublicKey)
 	h.Set(headerPublicKey, pub.Encode())
 }
 
+// Sign signs the header with the given private key.
 func (h *Header) Sign(prv crypto.PrivateKey) {
 	h.SetPublicKey(prv.PublicKey())
 
@@ -395,6 +395,7 @@ func (h *Header) Sign(prv crypto.PrivateKey) {
 	h.AddBytes(headerSignature, prv.Sign(h.Hash()))
 }
 
+// Verify verifies the signature of the root-header.
 func (h Header) Verify() bool {
 	n := len(h)
 	return n >= 2 &&
