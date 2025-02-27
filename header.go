@@ -408,6 +408,7 @@ func (h Header) VerifyMerkleProof(merkleRoot, proof []byte) bool {
 	return crypto.VerifyMerkleProof(h.Hash(), merkleRoot, proof)
 }
 
+// ValidateHeader validates header fields.
 func ValidateHeader(h Header) error {
 	for _, v := range h {
 		if !isValidHeaderField(v) {
@@ -420,12 +421,14 @@ func ValidateHeader(h Header) error {
 	return nil
 }
 
+// isValidHeaderField checks if the header field is valid.
 func isValidHeaderField(v HeaderField) bool {
 	return len(v.Name) <= MaxHeaderNameLength &&
 		len(v.Value) <= MaxHeaderValueLength &&
 		containsOnly([]byte(v.Name), headerNameCharset)
 }
 
+// sortHeaders sorts the headers by path.
 func sortHeaders(hh []Header) {
 	sort.Slice(hh, func(i, j int) bool {
 		return pathLess(hh[i].Path(), hh[j].Path())
