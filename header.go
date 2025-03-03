@@ -298,6 +298,7 @@ func (h Header) Length() (n int) {
 	return
 }
 
+// totalVolume returns the total volume of the header.
 func (h Header) totalVolume() int64 {
 	return int64(h.Length()) + h.FileSize()
 }
@@ -435,6 +436,7 @@ func sortHeaders(hh []Header) {
 	})
 }
 
+// traceHeaders prints the headers for debugging.
 func traceHeaders(hh []Header) {
 	for _, h := range hh {
 		println("  - ", h.String())
@@ -442,6 +444,7 @@ func traceHeaders(hh []Header) {
 	println("")
 }
 
+// isDir checks if the path represents a directory.
 func isDir(path string) bool {
 	return path == "" || path[len(path)-1] == '/' // is root or ended with '/'
 }
